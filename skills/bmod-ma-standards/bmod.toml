@@ -1,0 +1,13 @@
+[bmod]
+code = "ma-standards"
+version = "1.0.0"
+update_source = "github:mayafit/ma-bmad-extensions/skills"
+skills = [
+  "ma-standards-apply",
+]
+required_skills = [
+  { skill = "bmad", version = "6.13.0", source = "github:bmad-code-org/BMAD-METHOD/skills" },
+]
+pre_install_message = ""
+post_install_message = """ma-standards is installed.
+Ask bmad for help to find the coding, quality and documentation standards."""

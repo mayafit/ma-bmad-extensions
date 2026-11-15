@@ -1,0 +1,112 @@
+# The package map of the ma-agents PRD, capability F29 ("Package map") and Decision P5-11.1: the module each
+# skill of this repository belongs to, and the tracked 3.x skills that have no 4.x module. Read by
+# tools/check_assignment.py (FR295). A change to the package map changes this file in the same commit.
+
+[modules.ma-ops]
+skills = [
+  "ma-agent-sre",
+  "ma-agent-cyber",
+  "ma-agent-devops",
+  "ma-agent-sqa",
+  "sre-check-deployment-status",
+  "sre-check-secrets",
+  "sre-check-system-status",
+  "sre-day-2-ops",
+  "sre-deployment-strategies",
+  "sre-fix-deployments",
+  "sre-gitops-status",
+  "cyber-generate-certs",
+  "cyber-immunity-estimation",
+  "cyber-security-audit",
+  "cyber-vault-secrets",
+  "cyber-verify-docker-users",
+  "cyber-verify-image-signature",
+  "cyber-vulnerability-scan",
+  "devops-configure-infrastructure",
+  "devops-disconnected-deployment",
+  "devops-docker-compose-setup",
+  "devops-manage-helm",
+  "devops-sign-docker-image",
+  "sqa-audit",
+  "sqa-ieee12207",
+  "sqa-requirements-quality",
+  "mil498-ocd",
+  "mil498-requirement-quality",
+  "mil498-sdd",
+  "mil498-sdp",
+  "mil498-srs",
+  "mil498-ssdd",
+  "mil498-sss",
+  "mil498-std",
+  "create-hardened-docker-skill",
+  "docker-hardening-verification",
+  "docker-image-signing",
+  "verify-hardened-docker-skill",
+  "self-signed-cert",
+  "ma-ops-dev-epic",
+]
+
+[modules.ma-standards]
+skills = [
+  "cpp-best-practices",
+  "cpp-concurrency-safety",
+  "cpp-const-correctness",
+  "cpp-memory-handling",
+  "cpp-modern-composition",
+  "cpp-robust-interfaces",
+  "csharp-best-practices",
+  "python-best-practices",
+  "python-dependency-mgmt",
+  "python-security-skill",
+  "js-ts-dependency-mgmt",
+  "js-ts-security-skill",
+  "vercel-react-best-practices",
+  "cmake-best-practices",
+  "logging-best-practices",
+  "opentelemetry-best-practices",
+  "code-documentation",
+  "code-review",
+  "test-generator",
+  "test-accompanied-development",
+  "git-workflow-skill",
+  "commit-message",
+  "auto-bug-detection",
+  "ai-audit-trail",
+  "document-revision-history",
+  "skill-creator",
+  "project-context-expansion",
+  "open-presentation",
+  "ma-standards-apply",
+]
+
+[modules.ma-knowledge]
+skills = [
+  "ma-knowledge-atlas",
+]
+
+[modules.ma-atlassian]
+skills = [
+  "ma-atlassian-bind",
+  "ma-atlassian-confluence-plan",
+  "ma-atlassian-confluence-record-root-page",
+]
+
+# "Tracked skills with no 4.x module": never shipped by this repository.
+[no_module]
+skills = [
+  "add-sprint",
+  "add-to-sprint",
+  "close-sprint",
+  "cleanup-done",
+  "modify-sprint",
+  "remove-from-sprint",
+  "prioritize-backlog",
+  "generate-backlog",
+  "sprint-status-view",
+  "story-status-lookup",
+  "my-next-issue",
+  "create-bug-story",
+  "bmad-sprint-planning",
+  "bmad-sprint-status",
+  "bmad-dev-story",
+]

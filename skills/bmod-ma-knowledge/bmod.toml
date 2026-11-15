@@ -1,0 +1,19 @@
+[bmod]
+code = "ma-knowledge"
+version = "1.0.0"
+update_source = "github:mayafit/ma-bmad-extensions/skills"
+skills = [
+  "ma-knowledge-atlas",
+]
+required_skills = [
+  { skill = "bmad", version = "6.13.0", source = "github:bmad-code-org/BMAD-METHOD/skills" },
+]
+pre_install_message = ""
+post_install_message = """ma-knowledge is installed.
+Ask ma-knowledge-atlas to generate the Knowledge Atlas of the initiative store."""
+
+[[bmod.config_questions]]
+key = "atlas_output"
+prompt = "Folder the Knowledge Atlas is written to (empty: {output_folder}/knowledge-atlas)"
+default = ""
+scope = "team"

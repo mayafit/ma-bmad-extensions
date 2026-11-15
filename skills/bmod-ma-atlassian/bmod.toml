@@ -1,0 +1,69 @@
+[bmod]
+code = "ma-atlassian"
+version = "1.0.0"
+update_source = "github:mayafit/ma-bmad-extensions/skills"
+skills = [
+  "ma-atlassian-bind",
+]
+required_skills = [
+  { skill = "bmad", version = "6.13.0", source = "github:bmad-code-org/BMAD-METHOD/skills" },
+  { skill = "bmad-agent-po", source = "github:bmad-code-org/BMAD-METHOD/skills" },
+  { skill = "bmad-build", source = "github:bmad-code-org/BMAD-METHOD/skills" },
+]
+pre_install_message = ""
+post_install_message = """ma-atlassian is installed.
+Ask ma-atlassian-bind to bind, and re-run bind after any module install or bmad setup."""
+
+[[bmod.config_questions]]
+key = "jira_site"
+prompt = "Jira Server/Data Center base URL (required)"
+default = ""
+scope = "team"
+
+[[bmod.config_questions]]
+key = "jira_project_key"
+prompt = "Default Jira project key (required)"
+default = ""
+scope = "team"
+
+[[bmod.config_questions]]
+key = "jira_mcp_server"
+prompt = "Name of the MCP server that reaches Jira (empty: REST with ambient credentials)"
+default = ""
+scope = "user"
+
+[[bmod.config_questions]]
+key = "confluence_site"
+prompt = "Confluence Server/Data Center base URL (required)"
+default = ""
+scope = "team"
+
+[[bmod.config_questions]]
+key = "confluence_mcp_server"
+prompt = "Name of the MCP server that reaches Confluence (empty: REST with ambient credentials)"
+default = ""
+scope = "user"
+
+[[bmod.config_questions]]
+key = "planning_space"
+prompt = "Confluence space key of the planning destination (required)"
+default = ""
+scope = "team"
+
+[[bmod.config_questions]]
+key = "planning_root_page"
+prompt = "Root page of the planning destination (empty: a page named for the project)"
+default = ""
+scope = "team"
+
+[[bmod.config_questions]]
+key = "tickets_space"
+prompt = "Confluence space key of the tickets destination (empty: the planning space)"
+default = ""
+scope = "team"
+
+[[bmod.config_questions]]
+key = "tickets_root_page"
+prompt = "Root page of the tickets destination (empty: a page named for the project)"
+default = ""
+scope = "team"
