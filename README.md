@@ -8,7 +8,7 @@ Each module installs alone with the Skills CLI (`npx skills add mayafit/ma-bmad-
 
 - `skills/bmod-<code>/` — one module record per module: `bmod.toml`, `SKILL.md`, `help/help.md`, `retired.toml`, and `roster.toml` where the module has agents.
 - `skills/<name>/` — every member skill, side by side: `SKILL.md`, `workflow.md`, `customize.toml`, and `bmod.toml` with a `[skill]` table; scripts under `scripts/` (declared in `[skill] scripts`, every one run as `uv run --no-cache`), bundled files under `assets/`, `examples/` and `references/`.
-- `tools/` — the CI checks, each a script that runs the same way locally; `tools/fixtures/` holds the instruction-file coexistence case table of ma-agents Story 36.5 that `ma-standards-apply` must pass, the 3.x tracking-data fixture (`migrate-v6/`, the collision cases of ma-agents Story 36.1 AC9) that `ma-ops-dev-epic/scripts/migrate_v6_backlog.py` must migrate idempotently, and the v7 initiative `initiative-atlas/` that `ma-knowledge-atlas` must render with every epic, ticket and status (FR305).
+- `tools/` — the CI checks, each a script that runs the same way locally (`sweep.py` is the cross-module sweep: configuration keys and files, no `bmad-*` name, every cross-module reference declared in its record, no 3.x sprint skill or 3.x project file named outside a migration; its audit reports sit under `tools/reports/`); `tools/fixtures/` holds the instruction-file coexistence case table of ma-agents Story 36.5 that `ma-standards-apply` must pass, the 3.x tracking-data fixture (`migrate-v6/`, the collision cases of ma-agents Story 36.1 AC9) that `ma-ops-dev-epic/scripts/migrate_v6_backlog.py` must migrate idempotently, and the v7 initiative `initiative-atlas/` that `ma-knowledge-atlas` must render with every epic, ticket and status (FR305).
 - One version line: every record carries the same `version`; a change to any module bumps it, and a tag `v<version>` marks each release. `update_source` and every member `source` are `github:mayafit/ma-bmad-extensions/skills`.
 
 Install one module, naming the record and every member (a record alone installs no member):
@@ -30,6 +30,8 @@ uv run --no-cache tools/validate_customize.py --skills-root skills --tree <tree>
 uv run --no-cache tools/lint_uv_guidance.py
 uv run --no-cache tools/check_assignment.py
 uv run --no-cache tools/check_names.py
+uv run --no-cache tools/sweep.py --tree <tree>
+uv run --no-cache tools/test_sweep.py --tree <tree>
 uv run --no-cache tools/test_apply_block.py --tree <tree>
 uv run --no-cache tools/test_migrate_v6_backlog.py --tree <tree>
 uv run --no-cache tools/test_atlas.py

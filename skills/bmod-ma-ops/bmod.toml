@@ -50,11 +50,14 @@ required_skills = [
   { skill = "bmad-agent-po", source = "github:bmad-code-org/BMAD-METHOD/skills" },
   { skill = "bmad-build", source = "github:bmad-code-org/BMAD-METHOD/skills" },
 ]
-# Members of `ma-standards` that `ma-ops-dev-epic` uses when installed (worktrees, self-review); absent, it says so
-# and runs without those steps. Setup reports a missing recommendation and never insists.
+# Members of `ma-standards` that `ma-ops-dev-epic` uses when installed (worktrees, self-review) and that
+# `cyber-vulnerability-scan` delegates the language scans to; absent, each skill says so and runs without that
+# step. Setup reports a missing recommendation and never insists.
 recommended_skills = [
   { skill = "git-workflow-skill", source = "github:mayafit/ma-bmad-extensions/skills" },
   { skill = "code-review", source = "github:mayafit/ma-bmad-extensions/skills" },
+  { skill = "js-ts-security-skill", source = "github:mayafit/ma-bmad-extensions/skills" },
+  { skill = "python-security-skill", source = "github:mayafit/ma-bmad-extensions/skills" },
 ]
 pre_install_message = ""
 post_install_message = """ma-ops is installed.

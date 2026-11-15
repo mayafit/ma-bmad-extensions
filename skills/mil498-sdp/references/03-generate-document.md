@@ -4,7 +4,7 @@ Write the document in the project's document language (English unless the user s
 
 ## Revision History
 
-Before writing any content, add a **Revision History table** immediately after the document title. If this is a new document, create the table with version `1.0`. If updating an existing document, read the existing revision history and add a new row with an incremented version number and a summary of all changes made in this session. See the `document-revision-history` skill for full formatting rules.
+Before writing any content, add a **Revision History table** immediately after the document title. If this is a new document, create the table with version `1.0`. If updating an existing document, read the existing revision history and add a new row with an incremented version number and a summary of all changes made in this session. The table below is the whole format: one consolidated row per version, newest last.
 
 ```markdown
 | Version | Date | Author | Changes |

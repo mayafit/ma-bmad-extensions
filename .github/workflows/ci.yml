@@ -64,6 +64,12 @@ jobs:
       - name: No owned bmad-* skill (FR287)
         run: uv run --no-cache tools/check_names.py
 
+      - name: Cross-module sweep (FR288 config reads, FR296, P5-11.3 declared references, 3.x names only in migrations)
+        run: uv run --no-cache tools/sweep.py --tree "$BMAD_TREE"
+
+      - name: Cross-module sweep mutants (every check red on its mutant, exemptions green)
+        run: uv run --no-cache tools/test_sweep.py --tree "$BMAD_TREE"
+
       - name: ma-standards-apply block writer, 36.5 coexistence cases (FR301)
         run: uv run --no-cache tools/test_apply_block.py --tree "$BMAD_TREE"
 
