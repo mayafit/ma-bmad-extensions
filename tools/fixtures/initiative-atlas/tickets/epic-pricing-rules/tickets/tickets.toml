@@ -1,0 +1,32 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Pricing function"
+description = "One pricing function behind every displayed price."
+verify = "Two pages show the same price for the same item."
+covers = ["R1"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Discount codes"
+description = "Adds code validation to the pricing call and shows the refusal reason."
+verify = "A valid code lowers the total; an expired one is refused with its reason."
+covers = ["R2"]
+after = [1]
+hitl = true
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "spike"
+title = "Rounding rules"
+description = "Decide how half-cent prices round."
+verify = "A one-page note with the rule."
+covers = ["R1"]
+after = []
+hitl = false
+risk = "low"

@@ -1,0 +1,57 @@
+next_id = 6
+
+[[entry]]
+id = 1
+type = "story"
+title = "Add item"
+description = "An add-item path through UI, API and store."
+verify = "A shopper adds one item and sees it in the cart."
+covers = ["R3"]
+after = ["1.1"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Remove item"
+description = "Removing an item updates the total."
+verify = "Removing the only item empties the cart."
+covers = ["R3"]
+after = [1]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 3
+type = "bug"
+title = "Total drift"
+description = "The total lags one change behind."
+verify = "The total matches after every change."
+covers = ["R3"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Quantity limits"
+description = "A cart line holds at most 99 units."
+verify = "The 100th unit is refused with a message."
+covers = ["R3"]
+after = [1]
+hitl = false
+risk = "low"
+unknown = "Is 99 the right limit for bulk buyers?"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Gift wrap"
+description = "A line can be gift-wrapped for a fee."
+verify = "The fee shows in the total."
+covers = ["R3"]
+after = [1]
+hitl = true
+risk = "low"

@@ -1,3 +1,4 @@
 [skill]
 bmod = "bmod-ma-knowledge"
 source = "github:mayafit/ma-bmad-extensions/skills"
+scripts = ["scripts/build_atlas.py"]

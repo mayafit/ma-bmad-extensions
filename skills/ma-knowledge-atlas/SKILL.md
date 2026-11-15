@@ -1,6 +1,6 @@
 ---
 name: ma-knowledge-atlas
-description: 'Generates the Knowledge Atlas HTML site of the initiative store. Use when the user says "generate the knowledge atlas" or "build the atlas". This version is a placeholder that reports the workflow is not available.'
+description: 'Generates the Knowledge Atlas, a self-contained HTML site of the initiative store with every epic and ticket and its status. Use when the user says ''generate the knowledge atlas'', ''build the atlas'' or wants to browse or share the project''s initiatives, epics and stories.'
 ---
 
 Run the following command exactly once without changing the current working directory.

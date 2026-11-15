@@ -1,0 +1,21 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Payment"
+description = "Pay with a card."
+verify = "A test card pays an order."
+covers = ["R4"]
+after = []
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Receipts"
+description = "A paid order emails a receipt."
+verify = "The receipt lists every line and the total."
+covers = ["R4"]
+after = [1]
+hitl = false
+risk = "low"
