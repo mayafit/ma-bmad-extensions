@@ -1,0 +1,3 @@
+[skill]
+bmod = "bmod-ma-knowledge"
+source = "github:mayafit/ma-bmad-extensions/skills"

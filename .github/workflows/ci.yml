@@ -1,0 +1,74 @@
+name: ci
+
+# Per-module gates of ma-bmad-extensions (ma-agents PRD F29: FR285, FR287, FR295, FR297, FR303, NFR84, NFR86;
+# Decision P5-11.1 to P5-11.3). Every check is a script under tools/ that runs the same way locally.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # bmadRef.core of ma-agents 4.x: the one BMAD-METHOD commit these modules are built and tested against.
+  BMAD_CORE: e734d3ac3c0f4ea31cc2c2bbbe79e86e54f2cae6
+  # bmadRef.skillsCli: the npm `skills` version the installer bundles.
+  SKILLS_CLI: 1.7.6
+  UV_VERSION: 0.13.8
+  DISABLE_TELEMETRY: "1"
+  DO_NOT_TRACK: "1"
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Node 22.20 (the Skills CLI floor)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.20.0
+
+      - name: uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: false
+
+      - name: Fetch BMAD-METHOD at the pinned commit
+        run: |
+          BMAD_TREE="$RUNNER_TEMP/bmad-method"
+          git init -q "$BMAD_TREE"
+          git -C "$BMAD_TREE" remote add origin https://github.com/bmad-code-org/BMAD-METHOD.git
+          git -C "$BMAD_TREE" fetch -q --depth 1 origin "$BMAD_CORE"
+          git -C "$BMAD_TREE" checkout -q FETCH_HEAD
+          test "$(git -C "$BMAD_TREE" rev-parse HEAD)" = "$BMAD_CORE"
+          echo "BMAD_TREE=$BMAD_TREE" >> "$GITHUB_ENV"
+
+      - name: Upstream validate_manifests.py
+        run: uv run --no-cache "$BMAD_TREE/skills/bmad/scripts/validate_manifests.py" --project-root .
+
+      - name: Contract validator (FR303)
+        run: uv run --no-cache tools/validate_customize.py --skills-root skills --tree "$BMAD_TREE" --render
+
+      - name: Skill-guidance lint (uv run --no-cache)
+        run: uv run --no-cache tools/lint_uv_guidance.py
+
+      - name: Complete module assignment (FR295)
+        run: uv run --no-cache tools/check_assignment.py
+
+      - name: No owned bmad-* skill (FR287)
+        run: uv run --no-cache tools/check_names.py
+
+      - name: Pack the Skills CLI
+        run: node tools/pack-skills-cli.mjs "$SKILLS_CLI" "$RUNNER_TEMP/skills-cli"
+
+      - name: Per-module install from this folder
+        run: uv run --no-cache tools/install_test.py --tree "$BMAD_TREE" --skills-cli "$RUNNER_TEMP/skills-cli" --work "$RUNNER_TEMP/install-local"
+
+      - name: Per-module install from the release tag (skipped while the tag does not exist)
+        run: uv run --no-cache tools/install_test.py --tree "$BMAD_TREE" --skills-cli "$RUNNER_TEMP/skills-cli" --work "$RUNNER_TEMP/install-tag" --from-tag mayafit/ma-bmad-extensions
