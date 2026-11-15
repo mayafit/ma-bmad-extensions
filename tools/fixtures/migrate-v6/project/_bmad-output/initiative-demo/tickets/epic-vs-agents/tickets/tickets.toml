@@ -1,0 +1,11 @@
+[[entry]]
+id = 1
+type = "story"
+title = "VS agent registry entry"
+description = "A registry entry per agent."
+verify = "The entry lists."
+covers = []
+after = []
+hitl = false
+risk = "low"
+v6_key = "4-1-vs-agent-registry-entry"

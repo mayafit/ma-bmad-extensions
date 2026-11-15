@@ -1,0 +1,22 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for devops-sign-docker-image. Overrides go in
+# {project-root}/_bmad/custom/devops-sign-docker-image.toml and merge per BMad structural rules:
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+[workflow]
+
+# Steps to run before the standard activation. Overrides append.
+activation_steps_prepend = []
+
+# Steps to run after persistent facts load but before the workflow begins. Overrides append.
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run. Overrides append.
+persistent_facts = [
+  "Images are signed and verified by digest; a private key is never echoed or committed.",
+]
+
+# Scalar: executed after the workflow completes. Override wins. Empty: nothing.
+on_complete = ""

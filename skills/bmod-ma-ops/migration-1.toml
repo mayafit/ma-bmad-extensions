@@ -1,0 +1,77 @@
+# The ma-ops module's first migration: ma-agents 3.x tracking data into the v7 ticket tree. `bmad migrate` runs a
+# module's `migration-<n>.toml` files in `<n>` order, after the `method` module's own migrations, which archive the
+# 3.x `sprint-status.yaml` under the initiative's `archive-v6/` folder; this one reads that archived copy.
+
+[migration]
+module = "ma-ops"
+from = "3"
+to = "4"
+title = "Move ma-agents 3.x backlog and sprint data into the ticket tree"
+summary = "Reads the 3.x sprint-status.yaml the method migration archived under an initiative's archive-v6/ and finishes what that migration does not know about ma-agents: backlog items become tickets in backlog/, the sprints section is archived as sprints.yaml, cancelled / wont-fix / optional work is dropped, every (epic, id) collision between tracking keys and story files is resolved and reported, moved 3.x bug files get a plan status tickets.py accepts, and _bmad/ma-skills/ is archived. One script does the deterministic part; this file tells the agent when to run it and what to check."
+
+# Read-only signals. Either one makes this migration worth offering.
+detect = """
+- `archive-v6/sprint-status.yaml` exists under an `initiative-*/` folder of `core.output_folder` (the `method` migration put it there) and no `migration-v6-v7/ma-ops-migration-1.md` report beside the initiative says the ma-ops migration completed for it.
+- `_bmad/ma-skills/` exists at the project root (the 3.x `ma-skills` module folder).
+It applies only after `bmad migrate method` has run: without an `initiative-*/` folder holding `archive-v6/sprint-status.yaml`, say so, point at the `method` migration, and stop.
+"""
+
+# The layout the migration moves toward. `<root>` is `{output_folder}` from the BMad config.
+target = """
+<project-root>/.mv6/<run>/                     # the backup folder: a short name, so a backup path fits MAX_PATH on Windows whenever its source does
+<root>/
+  initiative-<slug>/
+    tickets/
+      tickets.toml                             # an [[epic]] row added for every epic the tracking keys name and the tree lacks
+      epic-<slug>/tickets/tickets.toml         # [[entry]] rows joined to their tracking key by `v6_key`, added when missing
+      epic-<slug>/tickets/<type>-<slug>-plan.md  # `status: dropped` for cancelled / wont-fix / optional work
+    archive-v6/
+      sprint-status.yaml                       # unchanged
+      sprints.yaml                             # the `sprints:` section of the tracker, when it has one
+      <N>-<M>-validation-report.md             # review records moved out of the live tree
+      ma-skills/                               # the 3.x module folder, when the project had one
+  backlog/
+    <type>-<slug>.md                           # one per `backlog:` item not already in the tree, carrying its `v6_key`
+    <type>-<slug>-plan.md                      # status mapped from the 3.x status; 3.x bug files get a status tickets.py accepts
+  migration-v6-v7/ma-ops-migration-1.md        # the report
+"""
+
+precautions = """
+- Nothing changes before the plan is approved. The only write before approval is the script's `--dry-run` output, which writes no file.
+- The script backs up every file it changes under `<project-root>/.mv6/<run>/` before writing it, never overwrites an existing file (a name collision gets a numeric suffix and a report line), and is safe to re-run: a second run writes nothing already present.
+- The archived `sprint-status.yaml` is read, never changed. Nothing is deleted.
+- When the store is under git, commit after the script ran; never push.
+"""
+
+guide = """
+## Sequence
+
+1. Confirm the `method` migration ran: an `initiative-*/` folder under `core.output_folder` holds `archive-v6/sprint-status.yaml`. Read `core.output_folder` with `uv run --no-cache {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key core.output_folder`.
+2. Preview: `uv run --no-cache {project-root}/_bmad/ma-ops/scripts/migrate_v6_backlog.py --project-root {project-root} --dry-run`. It prints, per initiative, what it would write, map, archive, join and skip, and names the backup folder. Show that to the user as the plan and wait for approval.
+3. Run: the same command without `--dry-run`. The script writes the backup first, then the tree, then the report `<root>/migration-v6-v7/ma-ops-migration-1.md`.
+4. Run every `checklist` item and record its result in the report's `## Verification` section. Fix and recheck a failure, or report it; never skip one.
+5. Report: the counts the script printed, the report path, the backup folder (the user's to delete once satisfied, or now if version control already holds the old state), and the replacement for each 3.x sprint skill (the report's `## Removed 3.x skills` table): work is ordered by `tickets.toml` build order and `after`; Sofia (`bmad-agent-po`) answers "what's next", "file a bug" and the board; `tickets.py status` shows every ticket's state.
+
+## What the script does
+
+- `backlog:` items (unified 3.x format) not yet in the tree, matched by `v6_key` across every `tickets.toml` and every leaf file and plan of the initiative and `backlog/`, become `backlog/<type>-<slug>.md` carrying `v6_key`, with a plan when their 3.x status is past `backlog`; `sprints:` is written to `archive-v6/sprints.yaml`. A tracker with no `backlog:` or no `sprints:` section is valid input; the report says which is absent.
+- Every entry whose 3.x status is `cancelled`, `wont-fix` or `optional` gets a plan with `status: dropped` (an existing plan is updated, a missing one created); `review` becomes `in-review`; `drafted` and `contexted` become `ready-for-dev`; other statuses map as the `method` migration maps them.
+- Collisions on one (epic, id): a `<N>-<M>-validation-report.md` found in the live tree is a review record and moves to `archive-v6/`; a tracking key and a story file with the same `<N>-<M>` and different slugs are one story, joined by (N, M) with `v6_key` set to the tracking key; an epic the tracking keys name that has no `[[epic]]` row (no `## Epic N:` heading in the 3.x epics file) gets `epic-<N>-untitled/` with its story ids taken from the tracking keys; a lettered story number (`30-6a`, `30-6b`) keeps the letter in its id.
+- A 3.x bug file moved to `backlog/` whose `status` is not one `tickets.py` accepts gets a plan with the mapped status, so `tickets.py status backlog` exits 0.
+- `_bmad/ma-skills/`, when present, moves to the initiative's `archive-v6/ma-skills/`.
+- Every file it changes is copied first to `<project-root>/.mv6/<run>/` under a short hashed name, with an index of original paths beside it.
+"""
+
+# Verification. Every item is checked and its result recorded; an item that cannot be checked is reported as such.
+checklist = [
+  "`uv run --no-cache {project-root}/_bmad/method/scripts/tickets.py --project-root {project-root} status <initiative>` exits 0 for every migrated initiative, and `status backlog` exits 0.",
+  "Every `backlog:` item of the archived tracker is a leaf file in `backlog/` carrying its `v6_key`, or the report lists it as already present with the matching entry.",
+  "Every story tracking key (`<N>-<M>-<slug>`) of `development_status:` is joined to exactly one entry by `v6_key`, or the report lists it as not mapped with the reason.",
+  "Every ticket whose 3.x status was `cancelled`, `wont-fix` or `optional` has a plan with `status: dropped`; no other plan status changed except a 3.x bug status `tickets.py` rejected.",
+  "No `*-validation-report.md` remains under `tickets/` or `backlog/`; each sits in `archive-v6/` and the report names it.",
+  "`archive-v6/sprints.yaml` exists when the tracker had a `sprints:` section; the report states each absent section.",
+  "`_bmad/ma-skills/` no longer exists at the project root; when it existed, `archive-v6/ma-skills/` holds it.",
+  "A second run of the script reports nothing written and changes no file (compare `git status` before and after).",
+  "The backup folder `.mv6/<run>/` holds a copy of every file the script changed, listed in its `index.txt`, and no commit includes it.",
+  "The report lists every input read, every file written or archived, every status mapped, every collision resolved, and each removed 3.x sprint skill with the `bmad-agent-po` request that replaces it.",
+]

@@ -1,0 +1,47 @@
+# generated: 2026-03-15 (fixture: the ma-agents 3.x flat tracker, archived unchanged by the method migration)
+# updated: 2026-11-07 — epics 32 and 4 cancelled.
+development_status:
+  # ─── ACTIVE BUGS ──────────────────────────────────────────────────────────────
+  bug-docs-dir-created-empty: wont-fix   # CLOSED by product decision
+  bug-jira-backend-ignored-on-first-run: review   # fix in review
+  bug-marker-merge-orphan: backlog
+  bug-stale-copilot-skills-dir: done   # no 3.x bug file was moved for it
+
+  # ─── EPIC 4 ───────────────────────────────────────────────────────────────────
+  epic-4: cancelled
+  4-1-vs-agent-registry-entry: cancelled
+  4-2-vs-skill-template-format: cancelled
+  epic-4-retrospective: optional
+
+  # ─── EPIC 15 ──────────────────────────────────────────────────────────────────
+  epic-15: done
+  15-8-validate-migrated-agents-and-workflows: done
+  15-8-validation-report: done
+  epic-15-retrospective: optional
+
+  # ─── EPIC 16 ──────────────────────────────────────────────────────────────────
+  epic-16: in-progress
+  16-1-repository-layout-wizard-jira-enhancement: done   # tracking slug differs from the file slug
+  16-4-validate-cross-repo-path-resolution: review
+  16-9-new-layout-item: ready-for-dev   # no entry yet
+  epic-16-retrospective: optional
+
+  # ─── EPIC 24 (no `## Epic 24:` heading in epics.md) ───────────────────────────
+  epic-24: done
+  24-6-add-bmad-customize-skill-to-extension-plugin: done
+  24-7-wire-on-complete-hooks: optional
+
+  # ─── EPIC 30 ──────────────────────────────────────────────────────────────────
+  epic-30: done
+  30-3-custom-source-registry: done
+  30-6a-custom-source-prompt-enumerate-multiselect: done   # lettered story number
+  30-6b-custom-source-stage-install-subset: done
+  30-7-persist-reenumerate-marketplace-source: on-hold
+  epic-30-retrospective: optional
+
+  # ─── EPIC 32 (archived, no heading) ───────────────────────────────────────────
+  epic-32: cancelled
+  32-1-design-studio-module: cancelled
+
+  # ─── STANDALONE ───────────────────────────────────────────────────────────────
+  rename-sqa-persona-gad-to-gadi: done

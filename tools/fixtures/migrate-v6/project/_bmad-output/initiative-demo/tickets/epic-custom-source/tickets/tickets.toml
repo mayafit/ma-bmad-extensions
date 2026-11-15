@@ -1,0 +1,11 @@
+[[entry]]
+id = 3
+type = "story"
+title = "Custom source registry"
+description = "A registry of custom sources."
+verify = "The registry lists sources."
+covers = []
+after = []
+hitl = false
+risk = "low"
+v6_key = "30-3-custom-source-registry"

@@ -1,0 +1,22 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Repository layout wizard"
+description = "A wizard asks for the layout."
+verify = "The wizard runs."
+covers = []
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Validate cross-repo path resolution"
+description = "Paths resolve across repositories."
+verify = "A path resolves."
+covers = []
+after = []
+hitl = false
+risk = "low"
+v6_key = "16-4-validate-cross-repo-path-resolution"

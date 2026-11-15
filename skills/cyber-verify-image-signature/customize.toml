@@ -1,0 +1,22 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for cyber-verify-image-signature. Overrides go in
+# {project-root}/_bmad/custom/cyber-verify-image-signature.toml and merge per BMad structural rules:
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+[workflow]
+
+# Steps to run before the standard activation. Overrides append.
+activation_steps_prepend = []
+
+# Steps to run after persistent facts load but before the workflow begins. Overrides append.
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run. Overrides append.
+persistent_facts = [
+  "An image is verified by its immutable digest against the expected public key; a tag alone proves nothing.",
+]
+
+# Scalar: executed after the workflow completes. Override wins. Empty: nothing.
+on_complete = ""
