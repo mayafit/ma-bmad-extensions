@@ -4,6 +4,8 @@ version = "4.0.0-beta.1"
 update_source = "github:mayafit/ma-bmad-extensions/skills"
 skills = [
   "ma-atlassian-bind",
+  "ma-atlassian-confluence-plan",
+  "ma-atlassian-confluence-record-root-page",
 ]
 required_skills = [
   { skill = "bmad", version = "6.13.0", source = "github:bmad-code-org/BMAD-METHOD/skills" },
