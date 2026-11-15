@@ -1,8 +1,36 @@
 [bmod]
 code = "ma-standards"
-version = "1.0.0"
+version = "4.0.0-beta.1"
 update_source = "github:mayafit/ma-bmad-extensions/skills"
 skills = [
+  "cpp-best-practices",
+  "cpp-concurrency-safety",
+  "cpp-const-correctness",
+  "cpp-memory-handling",
+  "cpp-modern-composition",
+  "cpp-robust-interfaces",
+  "csharp-best-practices",
+  "python-best-practices",
+  "python-dependency-mgmt",
+  "python-security-skill",
+  "js-ts-dependency-mgmt",
+  "js-ts-security-skill",
+  "vercel-react-best-practices",
+  "cmake-best-practices",
+  "logging-best-practices",
+  "opentelemetry-best-practices",
+  "code-documentation",
+  "code-review",
+  "test-generator",
+  "test-accompanied-development",
+  "git-workflow-skill",
+  "commit-message",
+  "auto-bug-detection",
+  "ai-audit-trail",
+  "document-revision-history",
+  "skill-creator",
+  "project-context-expansion",
+  "open-presentation",
   "ma-standards-apply",
 ]
 required_skills = [
@@ -10,4 +38,5 @@ required_skills = [
 ]
 pre_install_message = ""
 post_install_message = """ma-standards is installed.
-Ask bmad for help to find the coding, quality and documentation standards."""
+Ask bmad for help to find the coding, quality and documentation standards, and run ma-standards-apply to write
+the standards block into the project's instruction files."""

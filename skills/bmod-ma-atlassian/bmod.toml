@@ -1,6 +1,6 @@
 [bmod]
 code = "ma-atlassian"
-version = "1.0.0"
+version = "4.0.0-beta.1"
 update_source = "github:mayafit/ma-bmad-extensions/skills"
 skills = [
   "ma-atlassian-bind",

@@ -1,0 +1,4 @@
+[skill]
+bmod = "bmod-ma-standards"
+source = "github:mayafit/ma-bmad-extensions/skills"
+scripts = ["scripts/verify_security.py"]
