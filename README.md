@@ -28,14 +28,30 @@ git init <tree> && git -C <tree> fetch --depth 1 https://github.com/bmad-code-or
 uv run --no-cache <tree>/skills/bmad/scripts/validate_manifests.py --project-root .
 uv run --no-cache tools/validate_customize.py --skills-root skills --tree <tree> --render
 uv run --no-cache tools/lint_uv_guidance.py
-uv run --no-cache tools/check_assignment.py
+uv run --no-cache tools/check_assignment.py --complete
 uv run --no-cache tools/check_names.py
+uv run --no-cache tools/check_unique_names.py --tree <tree>
+uv run --no-cache tools/test_gate_checks.py --tree <tree>
 uv run --no-cache tools/sweep.py --tree <tree>
 uv run --no-cache tools/test_sweep.py --tree <tree>
 uv run --no-cache tools/test_apply_block.py --tree <tree>
 uv run --no-cache tools/test_migrate_v6_backlog.py --tree <tree>
 uv run --no-cache tools/test_atlas.py
 node tools/pack-skills-cli.mjs 1.7.6 <cli>
-uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch>
-uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch> --from-tag mayafit/ma-bmad-extensions
+uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch> --expect-update current
+uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch> --from-tag mayafit/ma-bmad-extensions --expect-update current
 ```
+
+`check_assignment.py --complete` is the release gate of FR295: every package-map skill ships, except in a module `tools/package-map.toml` marks `pending = "<epic>"` (listed, not failed; a marker on a fully shipped module fails). `--expect-update current` asserts what `setup.py --status` reads anonymously from `main` of this repository (NFR84); on a branch that bumps the version pass `current,ahead`. `--from-tag` also takes a clone URL (`https://<host>/<repo>.git`) for the same tag install from a mirror.
+
+### Offline activation (NFR84, FR282)
+
+The second CI job (`offline`) proves that every skill activates with no network from the ma-agents 4.x runtime (`docs/on-prem-runtime.md` of ma-agents: uv 0.13.8, a managed CPython 3.11, the wheelhouse that `scripts/build-wheelhouse.py` resolves for the pinned tree plus this repository). Locally, with Docker and a Linux runtime folder `<rt>` (`bin/uv`, `python/`, `wheelhouse/linux-x64/` and `wheelhouse/wheelhouse-manifest.json`, prepared with network as the job's "Pre-fetch the runtime" step does):
+
+```bash
+docker run --rm --network none -v "$PWD:/ext:ro" -v <tree>:/tree:ro -v <cli>:/cli:ro -v <rt>:/rt:ro -v <scratch>:/work \
+  -e UV_PYTHON_INSTALL_DIR=/rt/python -e UV_PYTHON_PREFERENCE=only-managed -e UV_PYTHON_DOWNLOADS=never -e UV_OFFLINE=1 -e UV_NO_CACHE=1 \
+  node:22-bookworm /rt/bin/uv run --no-cache /ext/tools/offline_activation.py --tree /tree --skills-cli /cli --runtime /rt --work /work --require-no-network --control
+```
+
+`tools/offline_activation.py` also runs on a host with network (without `--require-no-network`; `--platform win-x64` with a Windows runtime folder), where it proves only that the runtime, not the host's uv configuration, feeds the activations.

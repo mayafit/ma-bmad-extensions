@@ -58,11 +58,17 @@ jobs:
       - name: Skill-guidance lint (uv run --no-cache)
         run: uv run --no-cache tools/lint_uv_guidance.py
 
-      - name: Complete module assignment (FR295)
-        run: uv run --no-cache tools/check_assignment.py
+      - name: Complete module assignment, every package-map skill shipped or marked pending (FR295; release gate 37.6)
+        run: uv run --no-cache tools/check_assignment.py --complete
 
       - name: No owned bmad-* skill (FR287)
         run: uv run --no-cache tools/check_names.py
+
+      - name: Skill names unique across this repository and the pinned snapshot (NFR84)
+        run: uv run --no-cache tools/check_unique_names.py --tree "$BMAD_TREE"
+
+      - name: Gate-check mutants (pending marker, unique names; every mutant red)
+        run: uv run --no-cache tools/test_gate_checks.py --tree "$BMAD_TREE"
 
       - name: Cross-module sweep (FR288 config reads, FR296, P5-11.3 declared references, 3.x names only in migrations)
         run: uv run --no-cache tools/sweep.py --tree "$BMAD_TREE"
@@ -82,8 +88,96 @@ jobs:
       - name: Pack the Skills CLI
         run: node tools/pack-skills-cli.mjs "$SKILLS_CLI" "$RUNNER_TEMP/skills-cli"
 
-      - name: Per-module install from this folder
-        run: uv run --no-cache tools/install_test.py --tree "$BMAD_TREE" --skills-cli "$RUNNER_TEMP/skills-cli" --work "$RUNNER_TEMP/install-local"
+      # setup.py --status reads each record anonymously from `main` of this public repository (NFR84: `current`).
+      # On `main` and on a tag the records equal `main`, so the state must be `current`; a branch may carry the
+      # next version (`ahead`) until it merges. `could-not-check` (no network) is never accepted here.
+      - name: Expected update state (current on main and tags; a branch may be ahead)
+        run: |
+          case "$GITHUB_REF" in
+            refs/heads/main|refs/tags/*) echo "EXPECT_UPDATE=current" >> "$GITHUB_ENV" ;;
+            *) echo "EXPECT_UPDATE=current,ahead" >> "$GITHUB_ENV" ;;
+          esac
+
+      - name: Per-module install from this folder; setup.py --status reports the update state online (FR297, NFR84)
+        run: uv run --no-cache tools/install_test.py --tree "$BMAD_TREE" --skills-cli "$RUNNER_TEMP/skills-cli" --work "$RUNNER_TEMP/install-local" --expect-update "$EXPECT_UPDATE"
 
       - name: Per-module install from the release tag (skipped while the tag does not exist)
-        run: uv run --no-cache tools/install_test.py --tree "$BMAD_TREE" --skills-cli "$RUNNER_TEMP/skills-cli" --work "$RUNNER_TEMP/install-tag" --from-tag mayafit/ma-bmad-extensions
+        run: uv run --no-cache tools/install_test.py --tree "$BMAD_TREE" --skills-cli "$RUNNER_TEMP/skills-cli" --work "$RUNNER_TEMP/install-tag" --from-tag mayafit/ma-bmad-extensions --expect-update "$EXPECT_UPDATE"
+
+  # Story 37.6 (NFR84, FR282): every skill activates offline with the 4.x runtime of ma-agents Story 36.2.
+  # The runner fetches the runtime while it has network (uv at a checked SHA-256, a managed CPython 3.11, the
+  # wheelhouse that ma-agents' `scripts/build-wheelhouse.py` resolves for the pinned tree plus this
+  # repository); then a `--network none` container installs each module alone and renders every member and
+  # starts every `[skill] scripts` entry through `uv run --no-cache`, with the wheelhouse as the only source.
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # ma-agents commit whose scripts/build-wheelhouse.py builds the wheelhouse (Story 36.2).
+      MA_AGENTS_REF: 3fc11057bd5496784b1fed49555cd34bbcc59663
+      # SHA-256 of uv-x86_64-unknown-linux-gnu.tar.gz 0.13.8 (ma-agents Story 36.1 / 36.2 record).
+      UV_SHA256: 5acfd9177cfecf0bf87578f059728215ccc884388988f55f7a65041b57387d91
+      # Node >= 22.20 image pinned by digest (the Skills CLI floor); the digest ma-agents' offline job runs.
+      OFFLINE_NODE_IMAGE: node:22-bookworm@sha256:e13726ca604184d7a91fcacab1fc09eefd642dc28e79ac34e85540dd93b78cfb
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Node 22.20 (the Skills CLI floor)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.20.0
+
+      - name: Fetch BMAD-METHOD at the pinned commit
+        run: |
+          BMAD_TREE="$RUNNER_TEMP/bmad-method"
+          git init -q "$BMAD_TREE"
+          git -C "$BMAD_TREE" remote add origin https://github.com/bmad-code-org/BMAD-METHOD.git
+          git -C "$BMAD_TREE" fetch -q --depth 1 origin "$BMAD_CORE"
+          git -C "$BMAD_TREE" checkout -q FETCH_HEAD
+          test "$(git -C "$BMAD_TREE" rev-parse HEAD)" = "$BMAD_CORE"
+          echo "BMAD_TREE=$BMAD_TREE" >> "$GITHUB_ENV"
+
+      - name: Fetch the wheelhouse builder of ma-agents at the pinned commit
+        run: |
+          MA="$RUNNER_TEMP/ma-agents"
+          git init -q "$MA"
+          git -C "$MA" remote add origin https://github.com/mayafit/AI_Agents.git
+          git -C "$MA" fetch -q --depth 1 origin "$MA_AGENTS_REF"
+          test "$(git -C "$MA" rev-parse FETCH_HEAD)" = "$MA_AGENTS_REF"
+          git -C "$MA" checkout -q FETCH_HEAD -- scripts/build-wheelhouse.py
+          echo "WHEELHOUSE_BUILDER=$MA/scripts/build-wheelhouse.py" >> "$GITHUB_ENV"
+
+      - name: Pack the Skills CLI
+        run: node tools/pack-skills-cli.mjs "$SKILLS_CLI" "$RUNNER_TEMP/skills-cli"
+
+      - name: Pre-pull the offline container image
+        run: docker pull "$OFFLINE_NODE_IMAGE"
+
+      - name: Pre-fetch the runtime (uv, Python 3.11, wheelhouse; online)
+        run: |
+          set -euo pipefail
+          RT="$RUNNER_TEMP/rt"
+          mkdir -p "$RT/bin"
+          curl -sSfL -o uv.tar.gz "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${UV_SHA256}  uv.tar.gz" | sha256sum -c -
+          tar -xzf uv.tar.gz -C "$RT/bin" --strip-components=1
+          rm uv.tar.gz
+          "$RT/bin/uv" --version
+          UV_PYTHON_INSTALL_DIR="$RT/python" "$RT/bin/uv" python install 3.11 --no-bin
+          ls "$RT/python"
+          UV="$RT/bin/uv" "$RT/bin/uv" run "$WHEELHOUSE_BUILDER" --snapshot "$BMAD_TREE" --extra-skills . \
+            --platform linux-x64 --out "$RT" --require jinja2 --require pyyaml
+          ls "$RT/wheelhouse/linux-x64"
+          echo "RT=$RT" >> "$GITHUB_ENV"
+
+      - name: Every skill activates with no network (uv run --no-cache from the runtime; control without find-links)
+        run: |
+          mkdir -p "$RUNNER_TEMP/offline-work"
+          docker run --rm --network none \
+            -v "$PWD:/ext:ro" -v "$BMAD_TREE:/tree:ro" -v "$RUNNER_TEMP/skills-cli:/cli:ro" -v "$RT:/rt:ro" \
+            -v "$RUNNER_TEMP/offline-work:/work" \
+            -e UV_PYTHON_INSTALL_DIR=/rt/python -e UV_PYTHON_PREFERENCE=only-managed -e UV_PYTHON_DOWNLOADS=never \
+            -e UV_OFFLINE=1 -e UV_NO_CACHE=1 -e DISABLE_TELEMETRY -e DO_NOT_TRACK \
+            "$OFFLINE_NODE_IMAGE" \
+            /rt/bin/uv run --no-cache /ext/tools/offline_activation.py --tree /tree --skills-cli /cli --runtime /rt --work /work --require-no-network --control
