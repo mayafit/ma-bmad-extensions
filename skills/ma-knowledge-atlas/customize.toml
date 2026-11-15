@@ -15,7 +15,7 @@ activation_steps_append = []
 
 # Persistent facts the workflow keeps in mind for the whole run. Overrides append.
 persistent_facts = [
-  "The Atlas reads the initiative store under core.output_folder and no v6 configuration key.",
+  "The Atlas reads the initiative store under core.output_folder (initiative-*/ envelopes, tickets/**/tickets.toml, each *-plan.md status) and no configuration key or tracker file of an earlier BMad; it writes only the Atlas folder, which it replaces whole.",
 ]
 
 # Scalar: executed after the workflow completes. Override wins. Empty: nothing.
