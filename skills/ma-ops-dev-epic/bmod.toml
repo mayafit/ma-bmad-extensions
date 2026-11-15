@@ -1,3 +1,5 @@
 [skill]
 bmod = "bmod-ma-ops"
 source = "github:mayafit/ma-bmad-extensions/skills"
+# Installed by setup to `_bmad/ma-ops/scripts/`; the script `bmod-ma-ops/migration-1.toml` calls.
+scripts = ["scripts/migrate_v6_backlog.py"]

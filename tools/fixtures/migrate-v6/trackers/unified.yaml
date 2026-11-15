@@ -1,0 +1,57 @@
+# fixture: the unified 3.x tracker (bmad-sprint-planning), archived unchanged by the method migration
+generated: 2026-05-01T00:00:00Z
+last_updated: 2026-11-01T00:00:00Z
+project: demo
+project_key: DEMO
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+epics:
+  epic-16:
+    status: in-progress
+    retrospective: optional
+  epic-40:
+    status: backlog
+    retrospective: optional
+backlog:
+  - id: 16-9-new-layout-item
+    type: story
+    epic: epic-16
+    title: New layout item
+    priority: 1
+    status: ready-for-dev
+    severity: null
+  - id: bug-new-thing
+    type: bug
+    epic: null
+    title: A new thing is broken
+    priority: 2
+    status: backlog
+    severity: high
+  - id: 40-1-first-story-of-epic-40
+    type: story
+    epic: epic-40
+    title: First story of epic 40
+    priority: 3
+    status: backlog
+    severity: null
+  - id: standalone-task
+    type: story
+    epic: null
+    title: A standalone task
+    priority: 4
+    status: cancelled
+    severity: null
+sprints:          # sprint-1 is closed; its items are archived with it
+  sprint-1:
+    name: Sprint 1
+    status: closed
+    start: 2026-06-01
+    end: 2026-06-14
+    capacity: 10
+    items:
+      - id: 16-4-validate-cross-repo-path-resolution
+        type: story
+        epic: epic-16
+        title: Validate cross-repo path resolution
+        status: review
+        severity: null

@@ -1,0 +1,25 @@
+# Written by the method migration (fixture).
+
+[[epic]]
+id = 4
+slug = "epic-vs-agents"
+title = "VS Code agents"
+covers = []
+
+[[epic]]
+id = 15
+slug = "epic-agents"
+title = "Agents and workflows"
+covers = []
+
+[[epic]]
+id = 16
+slug = "epic-layout"
+title = "Repository layout"
+covers = []
+
+[[epic]]
+id = 30
+slug = "epic-custom-source"
+title = "Custom source"
+covers = []

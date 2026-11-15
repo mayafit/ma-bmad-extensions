@@ -2,12 +2,13 @@
 # It sits beside `bmod.toml` and is found by its name. `_bmad/scripts/roster.py` reads it for
 # bmad-party-mode and any other skill that casts personas.
 #
-# A member with `skill` is an installed agent and joins the default room only when that skill is
-# installed. A member names its `skill` once the agent skill ships in this repository; until then
-# it is a guest who exists only in the `ops` group.
+# A member with `skill` is an installed agent: it joins the default room only when that skill is
+# installed, and its name, title and icon follow the skill's customization (`[agent]` in the skill's
+# `customize.toml`, which carries the same values).
 
 [[members]]
 code = "ma-agent-sre"
+skill = "ma-agent-sre"
 name = "Alex"
 icon = "🩺"
 title = "Site Reliability Engineer"
@@ -15,6 +16,7 @@ persona = "Keeps systems available, reliable and fast, and automates toil away w
 
 [[members]]
 code = "ma-agent-cyber"
+skill = "ma-agent-cyber"
 name = "Yael"
 icon = "🛡️"
 title = "Cyber Analyst"
@@ -22,6 +24,7 @@ persona = "Assesses vulnerabilities, models threats and hardens systems against 
 
 [[members]]
 code = "ma-agent-devops"
+skill = "ma-agent-devops"
 name = "Amit"
 icon = "🏗️"
 title = "DevOps Engineer"
@@ -29,6 +32,7 @@ persona = "Automates CI/CD pipelines and infrastructure as code with Terraform, 
 
 [[members]]
 code = "ma-agent-sqa"
+skill = "ma-agent-sqa"
 name = "Gadi"
 icon = "🔍"
 title = "Software Quality Assurance & Standards Expert"

@@ -1,7 +1,8 @@
 # DO NOT EDIT -- overwritten on every update.
 #
 # Workflow customization surface for ma-ops-dev-epic. Overrides go in
-# {project-root}/_bmad/custom/ma-ops-dev-epic.toml and merge per BMad structural rules:
+# {project-root}/_bmad/custom/ma-ops-dev-epic.toml (team) or
+# {project-root}/_bmad/custom/ma-ops-dev-epic.user.toml (personal) and merge per BMad structural rules:
 #   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
 #   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
 
@@ -15,8 +16,34 @@ activation_steps_append = []
 
 # Persistent facts the workflow keeps in mind for the whole run. Overrides append.
 persistent_facts = [
-  "Story status moves only through bmad-agent-po board requests; this skill never edits a plan's status line.",
+  "Story status moves only through bmad-agent-po board requests (start story, mark story done); this skill never edits a plan's status line and never writes a sprint tracker file.",
 ]
 
 # Scalar: executed after the workflow completes. Override wins. Empty: nothing.
 on_complete = ""
+
+# A user instruction run once after the epic-level review gate passes (for example: open the epic pull
+# request, publish a pre-release, post the report). Empty: nothing is published or pushed; the run ends
+# with the report.
+on_epic_complete = ""
+
+# Model tiers are abstract: the intake step maps each to a model the host exposes, and both collapse to
+# one model when only one is available (an air-gapped host, a single-provider CLI).
+#   review_tier_model: code review, review lenses, the epic-level gate.
+#   exec_tier_model:   build, fix loops.
+review_tier_model = "the strongest reasoning model the host exposes"
+exec_tier_model = "the fastest capable coding model the host exposes"
+
+# Which build skill runs each story: "bmad-build-auto" (unattended, the default) or "bmad-build"
+# (interactive; also used for a story whose row sets `hitl` or `plan_checkpoint`).
+build_skill = "bmad-build-auto"
+
+# Stories built concurrently within one wave.
+max_parallel_stories = 3
+
+# Review -> fix -> re-review rounds before a story is reported blocked.
+fix_loop_cap = 2
+
+# "waves" (dependency-aware, from `after`), "sequential" (one story at a time, build order) or "full"
+# (every story at once; ignores `after`).
+parallelism_strategy = "waves"

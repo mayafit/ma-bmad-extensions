@@ -1,6 +1,6 @@
 ---
 name: ma-ops-dev-epic
-description: 'Orchestrates one epic of the initiative store end to end through bmad-agent-po and bmad-build. Use when the user says "run the epic" or "dev epic [id]". This version is a placeholder that reports the workflow is not available.'
+description: 'Orchestrates one epic of the ticket tree end to end: reads its stories with tickets.py, orders them into dependency waves, has bmad-agent-po start each story, builds it with bmad-build or bmad-build-auto, reviews it with bmad-code-review, bmad-review and bmad-walkthrough, has bmad-agent-po mark it done, then runs an epic-level review gate. Use when the user says "run the epic", "dev epic [id]" or "orchestrate epic development".'
 ---
 
 Run the following command exactly once without changing the current working directory.

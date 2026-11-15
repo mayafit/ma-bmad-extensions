@@ -1,0 +1,3 @@
+[skill]
+bmod = "bmod-ma-ops"
+source = "github:mayafit/ma-bmad-extensions/skills"

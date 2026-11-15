@@ -1,0 +1,11 @@
+[[entry]]
+id = 8
+type = "story"
+title = "Validate migrated agents and workflows"
+description = "Every migrated agent activates."
+verify = "Each agent renders."
+covers = []
+after = []
+hitl = false
+risk = "low"
+v6_key = "15-8-validate-migrated-agents-and-workflows"
