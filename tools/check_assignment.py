@@ -8,7 +8,9 @@ Every skill folder under `skills/` (a folder that is not a `bmod-*` record) is l
 module record's `skills`, every entry of a record's `skills` is a folder under `skills/`, every record's
 code is a module of the package map (`tools/package-map.toml`), and every skill sits in the module the
 package map names for it. A skill the map lists under `[no_module]` is never shipped. `--complete`
-also requires every skill of the package map to be shipped (the release gate).
+also requires every skill of the package map to be shipped (the release gate, Story 37.6), except in a
+module the map marks `pending = "<epic>"`: its unshipped skills are listed, not failed, until the epic that
+ships them removes the marker -- a marker on a module whose skills all ship is stale and fails `--complete`.
 
 Usage: uv run --no-cache tools/check_assignment.py [--repo DIR] [--map FILE] [--complete]
 Exit: 0 assignment complete, 1 violations.
@@ -25,10 +27,11 @@ RECORD_PREFIX = "bmod-"
 HERE = Path(__file__).resolve().parent
 
 
-def load_map(path: Path) -> tuple[dict[str, str], dict[str, set[str]], set[str], list[str]]:
+def load_map(path: Path) -> tuple[dict[str, str], dict[str, set[str]], set[str], dict[str, str], list[str]]:
     data = tomllib.loads(path.read_text(encoding="utf-8"))
     owner: dict[str, str] = {}
     members: dict[str, set[str]] = {}
+    pending: dict[str, str] = {}
     problems: list[str] = []
     for code, table in sorted(data.get("modules", {}).items()):
         members[code] = set(table.get("skills", []))
@@ -36,14 +39,20 @@ def load_map(path: Path) -> tuple[dict[str, str], dict[str, set[str]], set[str],
             if skill in owner:
                 problems.append(f"{path.name}: {skill!r} is mapped to both {owner[skill]!r} and {code!r}")
             owner.setdefault(skill, code)
+        marker = table.get("pending")
+        if marker is not None:
+            if not isinstance(marker, str) or not marker.strip():
+                problems.append(f"{path.name}: [modules.{code}] pending must name the epic that ships the module")
+            else:
+                pending[code] = marker.strip()
     excluded = set(data.get("no_module", {}).get("skills", []))
     for skill in sorted(excluded & set(owner)):
         problems.append(f"{path.name}: {skill!r} is both in module {owner[skill]!r} and under [no_module]")
-    return owner, members, excluded, problems
+    return owner, members, excluded, pending, problems
 
 
 def check(repo: Path, map_path: Path, complete: bool) -> tuple[list[str], str]:
-    owner, map_members, excluded, problems = load_map(map_path)
+    owner, map_members, excluded, pending, problems = load_map(map_path)
     skills_dir = repo / "skills"
     folders = sorted(p.name for p in skills_dir.iterdir() if p.is_dir()) if skills_dir.is_dir() else []
     if not folders:
@@ -85,13 +94,27 @@ def check(repo: Path, map_path: Path, complete: bool) -> tuple[list[str], str]:
                         f"skills/{skill}: listed by {record} (module {code!r}); the package map puts it in {owner[skill]!r}"
                     )
     shipped = set(skills)
+    deferred: list[str] = []
     if complete:
         for skill in sorted(set(owner) - shipped):
-            problems.append(f"package map: {skill!r} (module {owner[skill]!r}) is not shipped")
+            if owner[skill] in pending:
+                deferred.append(skill)
+            else:
+                problems.append(f"package map: {skill!r} (module {owner[skill]!r}) is not shipped")
+        for code, epic in sorted(pending.items()):
+            if map_members[code] <= shipped:
+                problems.append(
+                    f"package map: [modules.{code}] pending = {epic!r} is stale: every skill of the module ships"
+                )
     summary = (
         f"complete assignment: {len(skills)} skill(s) in {len(records)} module record(s); "
         f"{len(shipped & set(owner))} of {len(owner)} package-map skills shipped"
     )
+    if complete:
+        summary += "".join(
+            f"; pending {code} ({epic}): {', '.join(sorted(map_members[code] - shipped))} not shipped"
+            for code, epic in sorted(pending.items())
+        ) or "; every package-map skill shipped"
     return problems, summary
 
 

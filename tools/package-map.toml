@@ -85,6 +85,10 @@ skills = [
 ]
 
 [modules.ma-atlassian]
+# Epic 38 ships the two Confluence members; until then `check_assignment.py --complete` (the release gate,
+# Story 37.6) lists them as pending instead of failing. Epic 38 removes this marker in the commit that
+# ships them -- a marker on a fully shipped module is stale and fails the check.
+pending = "Epic 38"
 skills = [
   "ma-atlassian-bind",
   "ma-atlassian-confluence-plan",

@@ -14,17 +14,22 @@ For each module record `skills/bmod-<code>/` of this repository, into a fresh sc
      `[[bmod.config_questions]]` as pending for this module; every pending question is answered with its
      declared default through `--module-answers` (`[modules."<code>"]` tables), which exits 0;
   4. `setup.py --status` reports the module with the record's version and no problem, unmet requirement or
-     pending question.
+     pending question; with `--expect-update STATES` its update state (the anonymous read of the record at
+     `update_source`, `main` of the public repository) must be one of STATES -- `current` is the NFR84 gate
+     (Story 37.6), `ahead` is what a branch that bumps the version reports until it merges, and
+     `could-not-check` is what an offline host reports, so it is never in a CI list.
 `setup.py` runs as the project's installed `bmad` (`--skill <project>/.claude/skills/bmad --root
 <project>/.claude/skills`); a `--skill` outside the project is counted as a global skills folder.
 
 SOURCE is this repository's folder (default) or, with `--from-tag OWNER/REPO`, `OWNER/REPO#v<version>`
 where `<version>` is the records' shared version (or `--tag`). When that tag does not exist on the remote
-the run prints SKIP and exits 0.
+the run prints SKIP and exits 0. `--from-tag` also takes a clone URL (`https://…/repo.git`, `file:///…`)
+for the same tag install from a mirror or a local bare clone (how 37.6 verified the tag path before the
+first tag existed).
 
 Usage:
   uv run --no-cache tools/install_test.py --tree BMAD_TREE --skills-cli CLI_DIR --work DIR
-      [--module CODE ...] [--from-tag OWNER/REPO [--tag TAG]]
+      [--module CODE ...] [--from-tag OWNER/REPO|URL [--tag TAG]] [--expect-update STATE[,STATE...]]
 Exit: 0 every module passes (or the tag is absent), 1 a module fails, 2 a prerequisite is missing.
 """
 
@@ -119,7 +124,9 @@ def toml_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def test_module(code: str, source: str, tree: Path, cli: list[str], work: Path, log) -> None:
+def test_module(
+    code: str, source: str, tree: Path, cli: list[str], work: Path, log, expect_update: frozenset[str] = frozenset()
+) -> None:
     folder = f"bmod-{code}"
     rec = record(REPO / "skills" / folder)
     module_skills = record_skills(REPO / "skills", folder)
@@ -177,15 +184,22 @@ def test_module(code: str, source: str, tree: Path, cli: list[str], work: Path, 
             raise Failure(f"--status {key}: {status[key]}")
     if entry.get("absent_skills"):
         raise Failure(f"--status absent_skills for {code}: {entry['absent_skills']}")
-    log(f"  status: {code} {entry['version']} scope {entry.get('scope')} update {entry.get('update', {}).get('state')}")
+    update = entry.get("update", {}) if isinstance(entry.get("update"), dict) else {}
+    log(f"  status: {code} {entry['version']} scope {entry.get('scope')} update {update.get('state')}")
+    if expect_update and update.get("state") not in expect_update:
+        detail = {k: update[k] for k in ("source", "source_version", "reason") if k in update}
+        raise Failure(f"--status update state {update.get('state')!r}, expected one of {sorted(expect_update)}: {detail}")
 
 
-def tag_exists(owner_repo: str, tag: str) -> bool:
-    result = run(
-        [tool("git"), "ls-remote", "--tags", f"https://github.com/{owner_repo}.git", f"refs/tags/{tag}"], REPO
-    )
+def clone_url(remote: str) -> str:
+    """`OWNER/REPO` on github.com, or a clone URL as given (`https://…/repo.git`, `file:///…`)."""
+    return remote if "://" in remote or remote.startswith("git@") else f"https://github.com/{remote}.git"
+
+
+def tag_exists(remote: str, tag: str) -> bool:
+    result = run([tool("git"), "ls-remote", "--tags", clone_url(remote), f"refs/tags/{tag}"], REPO)
     if result.returncode != 0:
-        raise Prerequisite(f"git ls-remote {owner_repo}: {result.stderr.strip()}")
+        raise Prerequisite(f"git ls-remote {remote}: {result.stderr.strip()}")
     return bool(result.stdout.strip())
 
 
@@ -195,9 +209,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skills-cli", type=Path, required=True, help="Skills CLI folder from tools/pack-skills-cli.mjs")
     parser.add_argument("--work", type=Path, required=True, help="scratch folder for the projects")
     parser.add_argument("--module", action="append", default=[], help="module code (default: every record)")
-    parser.add_argument("--from-tag", metavar="OWNER/REPO", help="install from OWNER/REPO#<tag> instead of this folder")
+    parser.add_argument(
+        "--from-tag", metavar="OWNER/REPO|URL", help="install from OWNER/REPO#<tag> (or a clone URL#<tag>) instead of this folder"
+    )
     parser.add_argument("--tag", help="tag for --from-tag (default: v<records' version>)")
+    parser.add_argument(
+        "--expect-update", metavar="STATES", default="",
+        help="comma-separated update states setup.py --status may report (e.g. current, or current,ahead on a branch)",
+    )
     args = parser.parse_args(argv)
+    expect_update = frozenset(s.strip() for s in args.expect_update.split(",") if s.strip())
 
     skills_dir = REPO / "skills"
     codes_all = sorted(record(p)["code"] for p in skills_dir.glob("bmod-*") if (p / "bmod.toml").is_file())
@@ -216,7 +237,8 @@ def main(argv: list[str] | None = None) -> int:
                 raise Prerequisite(f"records carry more than one version: {sorted(versions)}")
             tag = args.tag or f"v{versions.pop()}"
             if not tag_exists(args.from_tag, tag):
-                print(f"SKIP: tag {tag} does not exist on github.com/{args.from_tag}; the install from a tag runs once it does")
+                shown = args.from_tag if "://" in args.from_tag else f"github.com/{args.from_tag}"
+                print(f"SKIP: tag {tag} does not exist on {shown}; the install from a tag runs once it does")
                 return 0
             source = f"{args.from_tag}#{tag}"
         else:
@@ -231,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
     for code in codes:
         print(f"module {code} from {source}")
         try:
-            test_module(code, source, tree, cli, work, print)
+            test_module(code, source, tree, cli, work, print, expect_update)
             print(f"  PASS {code}")
         except (Failure, Prerequisite, json.JSONDecodeError, KeyError) as error:
             print(f"  FAIL {code}: {error}", file=sys.stderr)
@@ -239,7 +261,8 @@ def main(argv: list[str] | None = None) -> int:
     if failed:
         print(f"install test failed for {failed}", file=sys.stderr)
         return 1
-    print(f"OK: {len(codes)} module(s) installed alone from {source} and reported by setup.py --status")
+    expected = f", update state in {sorted(expect_update)}" if expect_update else ""
+    print(f"OK: {len(codes)} module(s) installed alone from {source} and reported by setup.py --status{expected}")
     return 0
 
 
