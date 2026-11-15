@@ -1,0 +1,4 @@
+[skill]
+bmod = "bmod-ma-standards"
+source = "github:mayafit/ma-bmad-extensions/skills"
+scripts = ["scripts/init_skill.py", "scripts/package_skill.py", "scripts/quick_validate.py"]

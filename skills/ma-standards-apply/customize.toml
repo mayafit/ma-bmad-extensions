@@ -15,7 +15,7 @@ activation_steps_append = []
 
 # Persistent facts the workflow keeps in mind for the whole run. Overrides append.
 persistent_facts = [
-  "This skill writes only between the <!-- ma-standards:start --> and <!-- ma-standards:end --> markers.",
+  "This skill writes only between the <!-- ma-standards:start --> and <!-- ma-standards:end --> markers and never touches another owner's block or the user's prose.",
 ]
 
 # Scalar: executed after the workflow completes. Override wins. Empty: nothing.

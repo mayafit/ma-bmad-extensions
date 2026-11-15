@@ -1,6 +1,6 @@
 ---
 name: ma-standards-apply
-description: 'Writes or removes the ma-standards block in the project''s instruction files. Use when the user says "apply the standards" or "remove the standards block". This version is a placeholder that reports the workflow is not available.'
+description: 'Writes or removes the ma-standards block in the project''s instruction files (AGENTS.md, CLAUDE.md, .clinerules, .roomodes, .github/copilot-instructions.md). Use when the user says ''apply the standards'' or ''remove the standards block''.'
 ---
 
 Run the following command exactly once without changing the current working directory.
