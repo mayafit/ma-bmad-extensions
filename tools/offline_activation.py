@@ -280,13 +280,26 @@ def activate_module(
     return rendered, started
 
 
+JS_SUFFIXES = {".js", ".cjs", ".mjs"}
+
+
 def start_script(rt: Runtime, project: Path, script: Path) -> str:
     """Start an installed script through the runtime: `--help` exits 0 (argparse), or the script prints its own
     usage text when called with `--help` or with no argument (the `sys.argv` scripts of skill-creator). A uv
-    failure (no interpreter, no wheel) or a traceback is a failure; so is any other non-zero exit."""
+    failure (no interpreter, no wheel) or a traceback is a failure; so is any other non-zero exit. A JavaScript
+    entry (`migrate_binding.js` of ma-atlassian-bind, F29: "run with `node`") is started with `node`, which the
+    offline image carries; an uncaught error is a failure."""
     attempts = (("--help",), ())
+    node = shutil.which("node") if script.suffix in JS_SUFFIXES else None
+    if script.suffix in JS_SUFFIXES and not node:
+        raise Failure(f"{script.name}: node is not on PATH")
     for args in attempts:
-        result = uv_run(rt, project, script, *args)
+        if node:
+            result = run([node, str(script), *args], project, rt.env())
+            if result.returncode != 0 and ("Error:" in result.stderr or "node:internal" in result.stderr):
+                raise Failure(f"{script.name} {' '.join(args) or '(no argument)'} exited {result.returncode}: {result.stderr.strip()[-1500:]}")
+        else:
+            result = uv_run(rt, project, script, *args)
         output = result.stdout + result.stderr
         shown = " ".join(args) or "(no argument)"
         if "Traceback" in output or NO_SOLUTION in output or "No interpreter found" in output:

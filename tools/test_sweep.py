@@ -80,6 +80,12 @@ def cases() -> list[tuple[str, Callable[[Path], None], str | None, bool]]:
     def m_tracker_in_migration(copy: Path) -> None:
         append(skills(copy) / "bmod-ma-ops" / "migration-1.toml", "\n# also reads sprint-status.yaml and my-next-issue data\n")
 
+    def m_layout_in_js_migration(copy: Path) -> None:
+        append(skills(copy) / "ma-atlassian-bind" / "scripts" / "migrate_binding.js", "\n// reads project-layout.yaml and MA-AGENTS-START blocks\n")
+
+    def m_layout_in_js_script(copy: Path) -> None:
+        (skills(copy) / "ma-atlassian-bind" / "scripts" / "helper.js").write_text("// reads project-layout.yaml\n", encoding="utf-8")
+
     def m_tracker_in_engine(copy: Path) -> None:
         assets = skills(copy) / "sre-day-2-ops" / "assets"
         assets.mkdir()
@@ -110,6 +116,8 @@ def cases() -> list[tuple[str, Callable[[Path], None], str | None, bool]]:
         ("a `sprint-status.yaml` mention outside a migration", m_tracker, "v6-files", False),
         ("control: `sprint-status.yaml` and a sprint skill inside migration-1.toml stay allowed", m_tracker_in_migration, None, False),
         ("control: `sprint-status.yaml` inside an opaque assets/*.cjs stays allowed", m_tracker_in_engine, None, False),
+        ("control: `project-layout.yaml` inside scripts/migrate_*.js stays allowed", m_layout_in_js_migration, None, False),
+        ("a `project-layout.yaml` mention in a script that is not a migration", m_layout_in_js_script, "config-reads", False),
         ("a recommended_skills entry for our skill without a source", m_recommended_without_source, "cross-module", False),
         ("a `bmad-loop` reference (not shipped at the pin)", m_not_at_pin, "cross-module", True),
         ("a name retired by another module", m_retired_elsewhere, "cross-module", False),
