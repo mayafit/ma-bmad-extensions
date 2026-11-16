@@ -23,7 +23,9 @@ For each module record `skills/bmod-<code>/` of this repository, into a fresh sc
 
 SOURCE is this repository's folder (default) or, with `--from-tag OWNER/REPO`, `OWNER/REPO#v<version>`
 where `<version>` is the records' shared version (or `--tag`). When that tag does not exist on the remote
-the run prints SKIP and exits 0. `--from-tag` also takes a clone URL (`https://…/repo.git`, `file:///…`)
+the run prints SKIP and exits 0. A tag install is judged by the tag's own records (cloned shallowly into
+`--work/tag-source`): a branch may list a member the tag does not ship yet (Story 38.1), and the tag's
+assertion is that what it ships installs alone. `--from-tag` also takes a clone URL (`https://…/repo.git`, `file:///…`)
 for the same tag install from a mirror or a local bare clone (how 37.6 verified the tag path before the
 first tag existed).
 
@@ -39,6 +41,7 @@ import argparse
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tomllib
@@ -71,6 +74,16 @@ def run(argv: list[str], cwd: Path, env: dict[str, str] | None = None) -> subpro
         argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, capture_output=True,
         text=True, encoding="utf-8", errors="replace", check=False,
     )
+
+
+def remove_tree(path: Path) -> None:
+    """`shutil.rmtree` that also removes read-only files (a git clone's objects on Windows)."""
+
+    def on_error(func, name, _exc):
+        os.chmod(name, stat.S_IWRITE)
+        func(name)
+
+    shutil.rmtree(path, onerror=on_error)
 
 
 def record(path: Path) -> dict:
@@ -125,11 +138,29 @@ def toml_string(value: str) -> str:
 
 
 def test_module(
-    code: str, source: str, tree: Path, cli: list[str], work: Path, log, expect_update: frozenset[str] = frozenset()
+    code: str, source: str, tree: Path, cli: list[str], work: Path, log, expect_update: frozenset[str] = frozenset(),
+    records: Path | None = None,
 ) -> None:
+    """Install module `code` from `source` into a fresh project under `work` and assert the four steps.
+
+    Args:
+        code: the module code (`bmod-<code>` is its record folder).
+        source: what the Skills CLI installs from: this repository's folder, or `OWNER/REPO#<tag>`.
+        tree: the BMAD-METHOD checkout at the pinned commit (core skills, setup.py).
+        cli: the packed Skills CLI command.
+        work: scratch folder; the project is `work/<code>`.
+        log: line printer.
+        expect_update: update states `setup.py --status` may report; empty accepts any.
+        records: the `skills/` folder whose records give the member list and version -- this repository's
+            for a folder install, the tag's own clone for a tag install (a branch may list members the tag
+            does not ship yet, and the tag must be judged by what it ships).
+    Raises:
+        Failure: an assertion failed; Prerequisite: a tool is missing.
+    """
     folder = f"bmod-{code}"
-    rec = record(REPO / "skills" / folder)
-    module_skills = record_skills(REPO / "skills", folder)
+    skills_root = records or REPO / "skills"
+    rec = record(skills_root / folder)
+    module_skills = record_skills(skills_root, folder)
     core_skills = [name for core in CORE_RECORDS for name in record_skills(tree / "skills", core)]
     project = work / code
     if project.exists():
@@ -249,11 +280,33 @@ def main(argv: list[str] | None = None) -> int:
 
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
+    records: Path | None = None
+    if args.from_tag:
+        # The tag is judged by its own records: a branch may already list a member the tag does not ship.
+        clone = work / "tag-source"
+        if clone.exists():
+            remove_tree(clone)
+        # init + fetch the tag ref + checkout `skills/` of FETCH_HEAD (as ci.yml fetches BMAD-METHOD). Only the
+        # records are needed; a full checkout under a long --work path hits MAX_PATH on Windows in tools/fixtures.
+        git = tool("git")
+        clone.mkdir(parents=True)
+        for argv in (
+            [git, "init", "-q"],
+            [git, "fetch", "-q", "--depth", "1", clone_url(args.from_tag), f"refs/tags/{tag}"],
+            [git, "checkout", "-q", "FETCH_HEAD", "--", "skills"],
+        ):
+            result = run(argv, clone)
+            if result.returncode != 0:
+                print(f"prerequisite: git {argv[1]} of tag {tag} from {args.from_tag}: {result.stderr.strip()}", file=sys.stderr)
+                return 2
+        records = clone / "skills"
+        sha = run([git, "rev-parse", "FETCH_HEAD"], clone).stdout.strip()[:12]
+        print(f"tag {tag} ({sha}) fetched to {clone.name}/skills; member lists and versions read from its records")
     failed: list[str] = []
     for code in codes:
         print(f"module {code} from {source}")
         try:
-            test_module(code, source, tree, cli, work, print, expect_update)
+            test_module(code, source, tree, cli, work, print, expect_update, records)
             print(f"  PASS {code}")
         except (Failure, Prerequisite, json.JSONDecodeError, KeyError) as error:
             print(f"  FAIL {code}: {error}", file=sys.stderr)

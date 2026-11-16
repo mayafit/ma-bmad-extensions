@@ -37,12 +37,13 @@ uv run --no-cache tools/test_sweep.py --tree <tree>
 uv run --no-cache tools/test_apply_block.py --tree <tree>
 uv run --no-cache tools/test_migrate_v6_backlog.py --tree <tree>
 uv run --no-cache tools/test_atlas.py
+uv run --no-cache tools/test_jira_verbs.py --mutants
 node tools/pack-skills-cli.mjs 1.7.6 <cli>
 uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch> --expect-update current
 uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch> --from-tag mayafit/ma-bmad-extensions --expect-update current
 ```
 
-`check_assignment.py --complete` is the release gate of FR295: every package-map skill ships, except in a module `tools/package-map.toml` marks `pending = "<epic>"` (listed, not failed; a marker on a fully shipped module fails). `--expect-update current` asserts what `setup.py --status` reads anonymously from `main` of this repository (NFR84); on a branch that bumps the version pass `current,ahead`. `--from-tag` also takes a clone URL (`https://<host>/<repo>.git`) for the same tag install from a mirror.
+`check_assignment.py --complete` is the release gate of FR295: every package-map skill ships, except in a module `tools/package-map.toml` marks `pending = "<epic>"` (listed, not failed; a marker on a fully shipped module fails). `test_jira_verbs.py` runs every REST form of `skills/ma-atlassian-bind/references/jira-onprem-verbs.md` with `curl` against `tools/jira_dc_mock.py`, a local mock of the Jira Data Center 9.17.0 endpoints the `jira-onprem` store verbs use (no Jira is reachable from CI; the reference file lists the same commands for a live run). `--expect-update current` asserts what `setup.py --status` reads anonymously from `main` of this repository (NFR84); on a branch that bumps the version pass `current,ahead`. `--from-tag` also takes a clone URL (`https://<host>/<repo>.git`) for the same tag install from a mirror; a tag install is judged by the tag's own records (fetched into `<scratch>/tag-source`), so a branch that adds a member the tag does not ship stays green.
 
 ### Offline activation (NFR84, FR282)
 

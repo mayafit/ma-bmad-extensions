@@ -85,6 +85,9 @@ jobs:
       - name: ma-knowledge-atlas over the fixture initiative (FR305)
         run: uv run --no-cache tools/test_atlas.py
 
+      - name: jira-onprem verb forms against the Jira Data Center mock, every mutant red (FR289; Story 38.1)
+        run: uv run --no-cache tools/test_jira_verbs.py --mutants
+
       - name: Pack the Skills CLI
         run: node tools/pack-skills-cli.mjs "$SKILLS_CLI" "$RUNNER_TEMP/skills-cli"
 

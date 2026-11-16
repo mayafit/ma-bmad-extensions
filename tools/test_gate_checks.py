@@ -6,11 +6,13 @@
 `check_unique_names.py`. Every mutant is applied to a fresh scratch copy of `skills/` and `tools/` (the
 repository itself is never changed) and must turn exactly that check red; the untouched copy is green.
 
-Cases:
-  c0  untouched copy: `--complete` green, listing the pending module
-  c1  the `pending` marker removed from `[modules.ma-atlassian]`: red (two skills not shipped)
+Cases (every package-map skill ships since Story 38.1, so the `pending` mutants create their own marker):
+  c0  untouched copy: `--complete` green, every package-map skill shipped
+  c1  a member unshipped (`skills/ma-atlassian-confluence-plan/` removed and unlisted from its record) with no
+      `pending` marker: red (not shipped)
   c2  a `pending` marker on `[modules.ma-ops]`, whose skills all ship: red (stale marker)
-  c3  an empty `pending = ""`: red (the marker must name the epic)
+  c3  an empty `pending = ""` on `[modules.ma-atlassian]`: red (the marker must name the epic)
+  c4  the member of c1 unshipped and `pending = "Epic 99"` on `[modules.ma-atlassian]`: green (listed, not failed)
   u0  untouched copy: unique names green
   u1  an owned folder named like an upstream record (`skills/bmod-method/`): red
   u2  an owned `SKILL.md` whose frontmatter `name` is an upstream skill (`bmad-agent-po`): red
@@ -54,13 +56,20 @@ def cases(tree: Path) -> list[tuple[str, str, Callable[[Path], None], str | None
         pass
 
     def c1(copy: Path) -> None:
-        replace(copy / "tools" / "package-map.toml", 'pending = "Epic 38"\n', "")
+        # unship one member: its folder goes and its record no longer lists it (a listed folder that is
+        # missing is another finding, `lists ... which is not a folder`)
+        shutil.rmtree(copy / "skills" / "ma-atlassian-confluence-plan")
+        replace(copy / "skills" / "bmod-ma-atlassian" / "bmod.toml", '  "ma-atlassian-confluence-plan",\n', "")
 
     def c2(copy: Path) -> None:
         replace(copy / "tools" / "package-map.toml", "[modules.ma-ops]\n", '[modules.ma-ops]\npending = "Epic 99"\n')
 
     def c3(copy: Path) -> None:
-        replace(copy / "tools" / "package-map.toml", 'pending = "Epic 38"\n', 'pending = ""\n')
+        replace(copy / "tools" / "package-map.toml", "[modules.ma-atlassian]\n", '[modules.ma-atlassian]\npending = ""\n')
+
+    def c4(copy: Path) -> None:
+        c1(copy)
+        replace(copy / "tools" / "package-map.toml", "[modules.ma-atlassian]\n", '[modules.ma-atlassian]\npending = "Epic 99"\n')
 
     def u1(copy: Path) -> None:
         shutil.copytree(copy / "skills" / "bmod-ma-standards", copy / "skills" / "bmod-method")
@@ -84,6 +93,7 @@ def cases(tree: Path) -> list[tuple[str, str, Callable[[Path], None], str | None
         ("c1", "assignment", c1, "'ma-atlassian-confluence-plan' (module 'ma-atlassian') is not shipped"),
         ("c2", "assignment", c2, "[modules.ma-ops] pending = 'Epic 99' is stale"),
         ("c3", "assignment", c3, "pending must name the epic"),
+        ("c4", "assignment", c4, None),
         ("u0", "unique", nothing, None),
         ("u1", "unique", u1, "name 'bmod-method' is also shipped by the pinned BMAD-METHOD snapshot"),
         ("u2", "unique", u2, "name 'bmad-agent-po' is also shipped by the pinned BMAD-METHOD snapshot"),
