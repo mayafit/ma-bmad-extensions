@@ -38,6 +38,7 @@ uv run --no-cache tools/test_apply_block.py --tree <tree>
 uv run --no-cache tools/test_migrate_v6_backlog.py --tree <tree>
 uv run --no-cache tools/test_atlas.py
 uv run --no-cache tools/test_jira_verbs.py --mutants
+uv run --no-cache tools/test_jira_starter.py --tree <tree> --mutants
 node tools/pack-skills-cli.mjs 1.7.6 <cli>
 uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch> --expect-update current
 uv run --no-cache tools/install_test.py --tree <tree> --skills-cli <cli> --work <scratch> --from-tag mayafit/ma-bmad-extensions --expect-update current

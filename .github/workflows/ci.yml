@@ -88,6 +88,9 @@ jobs:
       - name: jira-onprem verb forms against the Jira Data Center mock, every mutant red (FR289; Story 38.1)
         run: uv run --no-cache tools/test_jira_verbs.py --mutants
 
+      - name: jira-onprem store starter, F29 keys and maps, verb-reference forms, read by read_store.py and tickets.py, every mutant red (FR289; Story 38.2)
+        run: uv run --no-cache tools/test_jira_starter.py --tree "$BMAD_TREE" --mutants
+
       - name: Pack the Skills CLI
         run: node tools/pack-skills-cli.mjs "$SKILLS_CLI" "$RUNNER_TEMP/skills-cli"
 

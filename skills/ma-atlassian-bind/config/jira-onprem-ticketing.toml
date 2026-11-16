@@ -1,0 +1,144 @@
+# Store starter: Jira Server and Data Center ("jira-onprem"), shipped by ma-atlassian-bind (Story 38.2).
+# bmad-agent-po ships no starter of this name, so its `scripts/read_store.py` reads the project file alone:
+# `bind` writes this whole file into the project's _bmad/custom/ticketing-store-config.toml, filling the
+# empty `site`, `key` and `mcp_server` from the module answers jira_site, jira_project_key and
+# jira_mcp_server, and writing only keys the file does not yet define. A project changes a map entry, or a
+# whole verb when its instance differs, in that project file. Comments and `description` are never loaded.
+#
+# Two forms of every verb, chosen by `mcp_server`: empty, the Jira REST API v2 through curl with the user's
+# personal access token; set, the tools of that MCP server (mcp-atlassian 0.24.4, the MCP server that
+# documents Server and Data Center). Every form below is one that references/jira-onprem-verbs.md records
+# and Story 38.1 ran against the documented Jira 9.17.0 endpoints; Data Center has no Cloud API v3.
+
+description = "Jira Server or Data Center 8.14+ through the REST API v2 with a personal access token, or through an MCP server: work types, transitions with resolutions, Blocks links, JQL. Written by ma-atlassian-bind."
+
+[tickets]
+store = "jira-onprem"
+site = ""         # jira_site: the Jira base URL without a trailing slash, e.g. https://jira.example.com
+key = ""          # jira_project_key: the default Jira project key; a container's own `key` overrides it for everything under it
+mcp_server = ""   # jira_mcp_server: empty = the REST form of every verb; a name = the MCP form through that server
+access = """
+Jira Server or Data Center 8.14 or later at `site`. Every verb has two forms; `mcp_server` picks one:
+- empty: REST. Call `<site>/rest/api/2/...` with curl `-sS -i` (the first line printed is the status),
+  the header `Authorization: Bearer <PAT>` and, on a body, `Content-Type: application/json`. <PAT> is the
+  user's personal access token (Jira profile, Personal Access Tokens) in JIRA_PERSONAL_TOKEN in the
+  user's environment; never print it, never write it to a file, and when it is unset ask the user to set
+  it. An instance with tokens disabled takes basic authentication (`curl -u <username>`) instead.
+- set: the tools of the MCP server named `mcp_server` (mcp-atlassian, configured in the coding tool with
+  JIRA_URL = `site` and the user's JIRA_PERSONAL_TOKEN), with the tool names and arguments each verb gives.
+  The verbs need its toolsets jira_issues, jira_transitions, jira_comments, jira_links, jira_users and
+  jira_projects: TOOLSETS unset or `all` enables them; `default` lacks the last three. A tool missing
+  from the server's list: tell the user which toolset to enable, or clear `mcp_server` to use REST.
+Identity: "my work" means `assignee = currentUser()`. The current user is the `name` that
+`GET <site>/rest/api/2/myself` returns (MCP: `jira_get_user_profile {"user_identifier": "me"}`); Data
+Center compares assignees by that username, never by display name, and has no accountId. When the
+authenticated account is a shared or service account, stop and ask the user for a personal identity
+before any write.
+Failures: 401, the token is wrong or expired (the user creates a new one); 403, a permission the user's
+role lacks (name it: Browse, Create, Transition, Assign or Link); 400, report `errorMessages` and
+`errors` verbatim; 404, a key the user cannot see or a wrong path. Stop on any of them.
+"""
+
+fields = """
+severity is Jira's priority: P0 = Highest, P1 = High, P2 = Medium, P3 = Low; set it at create in
+`fields.priority.name` (MCP: in `additional_fields`) and change it by edit. risk is a label risk-low,
+risk-medium or risk-high. estimate is a label est:<value> (the Story Points field has a different
+custom field id on every instance). Empty field: the project's default priority, no label.
+"""
+
+reference = """
+A work item's url is `<site>/browse/<item>`; Jira renders the urls of a description as links. No web
+links are created; the description line is the reference.
+"""
+
+[verbs]
+setup = """
+Connect and check the instance at first publish, and whenever a map entry does not match. Stop at the
+first failure (`access`).
+REST:
+1. `GET <site>/rest/api/2/myself`: the token's user, `name`, `displayName`, `active`. Apply the identity
+   rule of `access` before anything else.
+2. `GET <site>/rest/api/2/serverInfo`: `version` 8.14 or later and `deploymentType` "Server" (what Data
+   Center reports); tell the user the version.
+3. `GET <site>/rest/api/2/project/<project>`, `GET <site>/rest/api/2/project/<project>/statuses` and
+   `GET <site>/rest/api/2/issue/createmeta/<project>/issuetypes`: compare the work types the user can
+   create with [tickets.types] and each type's statuses with [tickets.status].
+4. `GET <site>/rest/api/2/issueLinkType`: a type named Blocks (outward "blocks", inward "is blocked by"),
+   the one an after relation publishes as.
+MCP: `jira_get_user_profile {"user_identifier": "me"}`; `jira_get_project_issue_types {"project_key":
+"<project>"}`; `jira_get_link_types {}`. The statuses have no tool of their own: read an existing item with
+`jira_get_issue {"issue_key": "<item>", "fields": "issuetype,status", "include": "transitions"}`.
+Neither form creates work types or statuses: tell the user exactly what to add in Jira (a Jira admin
+edits a company-managed project's workflow) or which map entry to set in the project's store file.
+Jira's defaults (To Do, In Progress, Done; resolution Won't Do) need nothing; [tickets.status] also
+expects an In Review status, and dropped needs the Done transition to offer a resolution (see `write`).
+Do not ask for a level above Epic: by default the initiative stays local and everything below it publishes.
+"""
+
+write = """
+The project is the ticket's own `key`, else that of the nearest container above it, else `key` here.
+tracker_id is the work item's key and remote `<site>/browse/<item>`. Status never moves by edit: it
+moves by transition.
+REST (every body JSON, with `Content-Type: application/json`):
+- Create: `POST <site>/rest/api/2/issue` with `{"fields": {"project": {"key": "<project>"},
+  "issuetype": {"name": "<[tickets.types] value>"}, "summary": "<title>", "description": "<body>",
+  "labels": ["<type>", "hitl", "risk-<risk>"], "parent": {"key": "<parent item>"}}}`; 201 prints `key`,
+  the tracker_id. A spike is Task plus the label spike; priority per `fields`. No parent: omit `parent`;
+  an epic sits loose while [tickets.types].initiative is empty. An instance that still links stories to
+  epics by the Epic Link custom field sets that `customfield_<id>` in the same body instead of `parent`.
+- Edit: `PUT <site>/rest/api/2/issue/<item>` with `{"fields": {"description": "<body>"}, "update":
+  {"labels": [{"add": "<label>"}]}}` (204): body, labels, priority; never `status`.
+- Transition: `GET <site>/rest/api/2/issue/<item>/transitions`, take the transition whose `to.name` is
+  [tickets.status].<state>, then `POST <site>/rest/api/2/issue/<item>/transitions` with
+  `{"transition": {"id": "<id>"}}` (204). dropped shares the Done status with done, and the resolution
+  tells them apart: for dropped send `"fields": {"resolution": {"name": "Won't Do"}}` in the same call;
+  done sends no resolution. A 400 on `resolution` means the Done transition's screen lacks the field:
+  tell the user a Jira admin adds it there, or map dropped to a status of its own.
+- Assign: `PUT <site>/rest/api/2/issue/<item>/assignee` with `{"name": "<username>"}` (204); the
+  username, never a display name; `{"name": null}` unassigns; assign to me uses the `name` of `myself`.
+- Link: `POST <site>/rest/api/2/issueLink` with `{"type": {"name": "Blocks"}, "outwardIssue": {"key":
+  "<blocker>"}, "inwardIssue": {"key": "<item>"}}` (201, no body): the after relation, the blocker outward.
+- Comment: `POST <site>/rest/api/2/issue/<item>/comment` with `{"body": "<text>"}` (201).
+MCP (the same values; a JSON-valued argument is a JSON string):
+- Create: `jira_create_issue` with `project_key`, `summary`, `issue_type`, `description` and
+  `additional_fields` holding labels, priority and `{"parent": {"key": "<parent item>"}}`.
+- Edit: `jira_update_issue` with `issue_key`, `fields` (description) and `additional_fields` (labels).
+- Transition: `jira_get_transitions {"issue_key": "<item>"}`, then `jira_transition_issue` with
+  `issue_key`, `transition_id` and, for dropped, `fields` holding `{"resolution": {"name": "Won't Do"}}`.
+- Assign: `jira_assign_issue {"issue_key": "<item>", "assignee": "<username>"}`; empty unassigns.
+- Link: `jira_create_issue_link {"link_type": "Blocks", "outward_issue_key": "<blocker>",
+  "inward_issue_key": "<item>"}`; on an Epic Link instance a story joins its epic with
+  `jira_link_to_epic {"issue_key": "<item>", "epic_key": "<parent item>"}`.
+- Comment: `jira_add_comment {"issue_key": "<item>", "body": "<text>"}`.
+"""
+
+query = """
+REST:
+- One work item: `GET <site>/rest/api/2/issue/<item>?fields=key,issuetype,summary,status,assignee,parent,labels,issuelinks,resolution,description`.
+  `fields.status.name` maps back through [tickets.status]: Done with `resolution.name` Won't Do is
+  dropped, Done otherwise is done. after is the "is blocked by" links; the assignee is
+  `fields.assignee.name`; the description's covers holds the source requirement ids.
+- Search: `GET <site>/rest/api/2/search` with `jql`, `fields` and `maxResults` passed through
+  `curl -G --data-urlencode`; page with `startAt` while `total` is larger. Children:
+  `parent = <item> ORDER BY created ASC` (on an Epic Link instance `"Epic Link" = <item>`). Words:
+  `project = <project> AND text ~ "<words>"`, narrowed by issuetype or status per the maps. My work:
+  `project = <project> AND assignee = currentUser() AND statusCategory != Done ORDER BY priority DESC, rank ASC`.
+MCP: `jira_get_issue {"issue_key": "<item>", "fields": "<the same field list>"}`; `jira_search` with
+`jql` (the same JQL), `fields` and `limit` (at most 50 a call; page with `start_at`).
+"""
+
+# BMad type -> Jira work type.
+[tickets.types]
+initiative = ""   # empty: the initiative stays local. Set to "Initiative" only when the project has a level above Epic
+epic = "Epic"
+story = "Story"
+spike = "Task"   # plus label spike
+bug = "Bug"
+
+# BMad state -> Jira status.
+[tickets.status]
+backlog = "To Do"
+in-progress = "In Progress"
+review = "In Review"   # not a default Jira status; `setup` asks for it. With no review status, set it to the in-progress one
+done = "Done"
+dropped = "Done"   # with resolution Won't Do, set by the same transition (`write`); `query` reads it back as dropped
