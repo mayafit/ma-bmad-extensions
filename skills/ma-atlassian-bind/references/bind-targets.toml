@@ -11,7 +11,9 @@
 #           team answer of that name; {tickets_space} with the tickets_space answer, or planning_space when it
 #           is empty; {planning_root} and {tickets_root} with `the page "<root page>"`, or `the page named for
 #           the project` when the root-page answer is empty. An unknown {name} stops bind. {project-root} is
-#           left for the agent, as upstream's own values leave it.
+#           left for the agent, as upstream's own values leave it. The publish texts run the Confluence publish
+#           engine (`scripts/confluence_publish.cjs`, Story 38.4), which setup installs to
+#           `_bmad/ma-atlassian/scripts/`; the read texts name the Confluence access of {confluence_access}.
 #           The two MCP server names are user-scoped answers: a value names the answer, never its value, so a
 #           team file under _bmad/custom/ carries no one user's setting. Sofia's facts point at the store
 #           config for the identity rule (the starter's [tickets] access) and the maps, never copy them, so
@@ -33,15 +35,17 @@ starter = "config/jira-onprem-ticketing.toml"
 confluence_access = "Reach Confluence through the MCP server that the user's ma-atlassian answer confluence_mcp_server names (`uv run --no-cache {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.ma-atlassian.confluence_mcp_server`), or through the Confluence REST API with the host's ambient credentials when that answer is empty."
 planning_destination = "the Confluence planning destination (site {confluence_site}, space {planning_space}, under {planning_root})"
 tickets_destination = "the Confluence tickets destination (site {confluence_site}, space {tickets_space}, under {tickets_root})"
+publish_command = "node {project-root}/_bmad/ma-atlassian/scripts/confluence_publish.cjs publish --project-root {project-root}"
+publish_engine = "The publish engine places one page per file under the destination's root page, mirroring the initiative store, and reaches Confluence itself over REST with the user's personal access token in the environment variable CONFLUENCE_PERSONAL_TOKEN (never ask for the token); when the user's ma-atlassian answer confluence_mcp_server names an MCP server it makes no call and prints the MCP calls to make, in order: make them. Report each page link it prints. A collision line means nothing was published: tell the user which file to rename."
 
 [text]
-publish_planning = "Publish each finished document to {planning_destination}, at the place the document has in the initiative store: update the page when it exists, create it otherwise, and report the page link. {confluence_access} When Confluence cannot be reached, keep the local files, say so once, and continue."
+publish_planning = "Publish each finished document to {planning_destination}: run `{publish_command} --destination planning --path <the document file>` once, with one --path per finished document file. {publish_engine} When the command fails or Confluence cannot be reached, keep the local files, say so once, and continue."
 read_planning = "Before drafting, and whenever the work needs existing product or technical context, search {planning_destination} for pages on the subject and use what applies, naming the page as the source. {confluence_access}"
 read_ticket_page = "When the ticket in hand has a page in {tickets_destination}, read that page before anything else and treat it as part of the ticket; when it has none, or Confluence cannot be reached, say so once and continue. {confluence_access}"
 jira_identity = "Before any Jira query or write, read the Identity paragraph of [tickets] access in the store config (`uv run --no-cache {skill-root}/scripts/read_store.py --project-root {project-root} -k tickets.access`) and follow it: it defines \"my work\" and when to stop and ask for a personal identity."
 jira_maps = "The ticket store is jira-onprem: Jira Server/Data Center at {jira_site}, default project {jira_project_key}. BMad ticket types and states map to Jira work types and statuses through [tickets.types] and [tickets.status] of the store config; a type mapped to an empty value (the initiative, by default) stays local."
-publish_board = "Publish the pages of the tickets this board operation changed to {tickets_destination}, mirroring the initiative store layout, and report the page links. {confluence_access} When Confluence cannot be reached, say so once; the board change stands."
-publish_store = "Publish the ticket pages of the initiative store to {tickets_destination}, mirroring the initiative store layout, and report the page links. {confluence_access} When Confluence cannot be reached, say so once; the store change stands."
+publish_board = "Publish the tickets this board operation changed to {tickets_destination}: run `{publish_command} --destination tickets --path <file>` once, with one --path per changed ticket file and plan file. {publish_engine} When the command fails or Confluence cannot be reached, say so once; the board change stands."
+publish_store = "Publish the ticket pages of the initiative store to {tickets_destination}: run `{publish_command} --destination tickets`. {publish_engine} When the command fails or Confluence cannot be reached, say so once; the store change stands."
 
 # Publish to the planning destination; read Confluence before drafting (FR290).
 [[slot]]

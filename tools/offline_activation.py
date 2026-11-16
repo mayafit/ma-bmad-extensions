@@ -7,7 +7,7 @@
 With no network, each module is installed alone from this folder (the Skills CLI from the packed folder,
 BMAD v7 from the pinned tree), set up with `setup.py --module-answers`, and then every member is rendered
 with `render_skill.py` and every `[skill] scripts` entry is started (`--help`), all through
-`uv run --no-cache` with the runtime of ma-agents `docs/on-prem-runtime.md`:
+`uv run --no-cache` (a `.js`/`.cjs`/`.mjs` entry with `node`) with the runtime of ma-agents `docs/on-prem-runtime.md`:
 
   <runtime>/bin/uv                      uv (0.13.8)
   <runtime>/python/cpython-3.11.*       the managed interpreter (`uv python install 3.11 --no-bin`)
@@ -287,8 +287,9 @@ def start_script(rt: Runtime, project: Path, script: Path) -> str:
     """Start an installed script through the runtime: `--help` exits 0 (argparse), or the script prints its own
     usage text when called with `--help` or with no argument (the `sys.argv` scripts of skill-creator). A uv
     failure (no interpreter, no wheel) or a traceback is a failure; so is any other non-zero exit. A JavaScript
-    entry (`migrate_binding.js` of ma-atlassian-bind, F29: "run with `node`") is started with `node`, which the
-    offline image carries; an uncaught error is a failure."""
+    entry (`.js`, `.cjs`, `.mjs`: `migrate_binding.js` and the Confluence engine of ma-atlassian-bind, F29:
+    "run with `node`") is started with `node`, which the offline image carries; an uncaught error (`Error:` on a
+    non-zero exit, a stack trace, or `Cannot find module`) is a failure."""
     attempts = (("--help",), ())
     node = shutil.which("node") if script.suffix in JS_SUFFIXES else None
     if script.suffix in JS_SUFFIXES and not node:
@@ -296,8 +297,10 @@ def start_script(rt: Runtime, project: Path, script: Path) -> str:
     for args in attempts:
         if node:
             result = run([node, str(script), *args], project, rt.env())
-            if result.returncode != 0 and ("Error:" in result.stderr or "node:internal" in result.stderr):
-                raise Failure(f"{script.name} {' '.join(args) or '(no argument)'} exited {result.returncode}: {result.stderr.strip()[-1500:]}")
+            output = result.stdout + result.stderr
+            crashed = result.returncode != 0 and ("Error:" in result.stderr or "node:internal" in result.stderr)
+            if crashed or "Cannot find module" in output or re.search(r"^\s+at .+:\d+:\d+\)?$", output, re.MULTILINE):
+                raise Failure(f"{script.name} {' '.join(args) or '(no argument)'} exited {result.returncode}: {output.strip()[-1500:]}")
         else:
             result = uv_run(rt, project, script, *args)
         output = result.stdout + result.stderr
