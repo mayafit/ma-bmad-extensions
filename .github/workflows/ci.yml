@@ -91,6 +91,9 @@ jobs:
       - name: jira-onprem store starter, F29 keys and maps, verb-reference forms, read by read_store.py and tickets.py, every mutant red (FR289; Story 38.2)
         run: uv run --no-cache tools/test_jira_starter.py --tree "$BMAD_TREE" --mutants
 
+      - name: ma-atlassian-bind bind / unbind / status over the bind target table, every mutant red (FR289-FR291, FR303; Story 38.3)
+        run: uv run --no-cache tools/test_bind.py --tree "$BMAD_TREE" --mutants
+
       - name: Pack the Skills CLI
         run: node tools/pack-skills-cli.mjs "$SKILLS_CLI" "$RUNNER_TEMP/skills-cli"
 

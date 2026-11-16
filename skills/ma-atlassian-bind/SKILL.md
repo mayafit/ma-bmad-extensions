@@ -1,6 +1,6 @@
 ---
 name: ma-atlassian-bind
-description: 'Binds, unbinds or reports the Jira and Confluence binding of the upstream skills. Use when the user says "bind atlassian", "unbind atlassian" or "atlassian status". This version is a placeholder that reports the workflow is not available.'
+description: 'Binds, unbinds or reports the Jira and Confluence binding of the upstream skills. Use when the user says "bind atlassian", "unbind atlassian" or "atlassian status".'
 ---
 
 Run the following command exactly once without changing the current working directory.

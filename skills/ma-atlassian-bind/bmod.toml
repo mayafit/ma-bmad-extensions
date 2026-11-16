@@ -1,3 +1,5 @@
 [skill]
 bmod = "bmod-ma-atlassian"
 source = "github:mayafit/ma-bmad-extensions/skills"
+# Installed by setup to `_bmad/ma-atlassian/scripts/` too; the workflow runs it from `{skill-root}/scripts/`.
+scripts = ["scripts/bind.py"]
