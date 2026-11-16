@@ -16,6 +16,7 @@ activation_steps_append = []
 # Persistent facts the workflow keeps in mind for the whole run. Overrides append.
 persistent_facts = [
   "Bind writes each owned key between its own ma-atlassian marker pair and never overwrites a key the user set.",
+  "Only the bundled script reads the module answers and writes under _bmad/custom/; the agent never edits those files by hand.",
 ]
 
 # Scalar: executed after the workflow completes. Override wins. Empty: nothing.

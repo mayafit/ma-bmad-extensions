@@ -1,0 +1,177 @@
+# Bind target table of ma-atlassian (ma-agents PRD F29 "Bind target table" and "Jira store"; FR289, FR290,
+# FR291; Decision P5-11.4). Fixed for the pinned BMAD-METHOD commit (bmadRef.core). `scripts/bind.py` reads
+# this file: it is data, not guidance.
+#
+# [[slot]]  One owned key of one upstream skill: `skill`, `table` (`workflow` or `agent`), `key`, `role` (what
+#           the key does, as `status` prints it), `form` (`list` or `string`, the shape the skill's installed
+#           customize.toml declares for the key) and `text` (the name, or names, of entries of [text]). A
+#           `list` slot gets one string per named text; a `string` slot exactly one.
+# [text]    The values. In a text, bind replaces each {name} of [vars] with that entry, then each answer
+#           placeholder: {jira_site}, {jira_project_key}, {confluence_site} and {planning_space} with the
+#           team answer of that name; {tickets_space} with the tickets_space answer, or planning_space when it
+#           is empty; {planning_root} and {tickets_root} with `the page "<root page>"`, or `the page named for
+#           the project` when the root-page answer is empty. An unknown {name} stops bind. {project-root} is
+#           left for the agent, as upstream's own values leave it.
+#           The two MCP server names are user-scoped answers: a value names the answer, never its value, so a
+#           team file under _bmad/custom/ carries no one user's setting. Sofia's facts point at the store
+#           config for the identity rule (the starter's [tickets] access) and the maps, never copy them, so
+#           the store file stays their one record. In bmad-agent-po's texts {skill-root} is Sofia's folder.
+# [store]   The Jira store starter: bind writes every key of `starter` (a path under the skill folder) into
+#           _bmad/custom/<file>, key by key and only where the file does not yet define the key; `answers`
+#           maps a starter key to the module answer whose value replaces the starter's.
+
+[store]
+file = "ticketing-store-config.toml"
+starter = "config/jira-onprem-ticketing.toml"
+
+[store.answers]
+"tickets.site" = "jira_site"
+"tickets.key" = "jira_project_key"
+"tickets.mcp_server" = "jira_mcp_server"
+
+[vars]
+confluence_access = "Reach Confluence through the MCP server that the user's ma-atlassian answer confluence_mcp_server names (`uv run --no-cache {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.ma-atlassian.confluence_mcp_server`), or through the Confluence REST API with the host's ambient credentials when that answer is empty."
+planning_destination = "the Confluence planning destination (site {confluence_site}, space {planning_space}, under {planning_root})"
+tickets_destination = "the Confluence tickets destination (site {confluence_site}, space {tickets_space}, under {tickets_root})"
+
+[text]
+publish_planning = "Publish each finished document to {planning_destination}, at the place the document has in the initiative store: update the page when it exists, create it otherwise, and report the page link. {confluence_access} When Confluence cannot be reached, keep the local files, say so once, and continue."
+read_planning = "Before drafting, and whenever the work needs existing product or technical context, search {planning_destination} for pages on the subject and use what applies, naming the page as the source. {confluence_access}"
+read_ticket_page = "When the ticket in hand has a page in {tickets_destination}, read that page before anything else and treat it as part of the ticket; when it has none, or Confluence cannot be reached, say so once and continue. {confluence_access}"
+jira_identity = "Before any Jira query or write, read the Identity paragraph of [tickets] access in the store config (`uv run --no-cache {skill-root}/scripts/read_store.py --project-root {project-root} -k tickets.access`) and follow it: it defines \"my work\" and when to stop and ask for a personal identity."
+jira_maps = "The ticket store is jira-onprem: Jira Server/Data Center at {jira_site}, default project {jira_project_key}. BMad ticket types and states map to Jira work types and statuses through [tickets.types] and [tickets.status] of the store config; a type mapped to an empty value (the initiative, by default) stays local."
+publish_board = "Publish the pages of the tickets this board operation changed to {tickets_destination}, mirroring the initiative store layout, and report the page links. {confluence_access} When Confluence cannot be reached, say so once; the board change stands."
+publish_store = "Publish the ticket pages of the initiative store to {tickets_destination}, mirroring the initiative store layout, and report the page links. {confluence_access} When Confluence cannot be reached, say so once; the store change stands."
+
+# Publish to the planning destination; read Confluence before drafting (FR290).
+[[slot]]
+skill = "bmad-prd"
+table = "workflow"
+key = "external_handoffs"
+role = "publish to the planning destination"
+form = "list"
+text = "publish_planning"
+
+[[slot]]
+skill = "bmad-prd"
+table = "workflow"
+key = "external_sources"
+role = "read Confluence before drafting"
+form = "list"
+text = "read_planning"
+
+[[slot]]
+skill = "bmad-architecture"
+table = "workflow"
+key = "external_handoffs"
+role = "publish to the planning destination"
+form = "list"
+text = "publish_planning"
+
+[[slot]]
+skill = "bmad-architecture"
+table = "workflow"
+key = "external_sources"
+role = "read Confluence before drafting"
+form = "list"
+text = "read_planning"
+
+[[slot]]
+skill = "bmad-facilitate"
+table = "workflow"
+key = "external_handoffs"
+role = "publish to the planning destination"
+form = "list"
+text = "publish_planning"
+
+[[slot]]
+skill = "bmad-facilitate"
+table = "workflow"
+key = "external_sources"
+role = "read Confluence before drafting"
+form = "list"
+text = "read_planning"
+
+# Publish to the planning destination when the document is complete (FR290).
+[[slot]]
+skill = "bmad-ux"
+table = "workflow"
+key = "on_complete"
+role = "publish to the planning destination"
+form = "string"
+text = "publish_planning"
+
+[[slot]]
+skill = "bmad-product-brief"
+table = "workflow"
+key = "on_complete"
+role = "publish to the planning destination"
+form = "string"
+text = "publish_planning"
+
+[[slot]]
+skill = "bmad-prfaq"
+table = "workflow"
+key = "on_complete"
+role = "publish to the planning destination"
+form = "string"
+text = "publish_planning"
+
+# Read the ticket's Confluence page at activation (FR290).
+[[slot]]
+skill = "bmad-build"
+table = "workflow"
+key = "activation_steps_prepend"
+role = "read the ticket's Confluence page"
+form = "list"
+text = "read_ticket_page"
+
+[[slot]]
+skill = "bmad-build-auto"
+table = "workflow"
+key = "activation_steps_prepend"
+role = "read the ticket's Confluence page"
+form = "list"
+text = "read_ticket_page"
+
+[[slot]]
+skill = "bmad-code-review"
+table = "workflow"
+key = "activation_steps_prepend"
+role = "read the ticket's Confluence page"
+form = "list"
+text = "read_ticket_page"
+
+[[slot]]
+skill = "bmad-retrospective"
+table = "workflow"
+key = "activation_steps_prepend"
+role = "read the ticket's Confluence page"
+form = "list"
+text = "read_ticket_page"
+
+# Sofia: the Jira identity clause and the type and status maps (FR289); publish ticket pages after board and
+# store changes (FR290).
+[[slot]]
+skill = "bmad-agent-po"
+table = "agent"
+key = "persistent_facts"
+role = "Jira identity clause and type/status maps"
+form = "list"
+text = ["jira_identity", "jira_maps"]
+
+[[slot]]
+skill = "bmad-agent-po"
+table = "workflow"
+key = "board_after"
+role = "publish ticket pages after a board change"
+form = "string"
+text = "publish_board"
+
+[[slot]]
+skill = "bmad-agent-po"
+table = "workflow"
+key = "store_after"
+role = "publish ticket pages after a store change"
+form = "string"
+text = "publish_store"
