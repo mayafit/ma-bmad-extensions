@@ -29,7 +29,7 @@ Five checks over every folder under `skills/` (module records and members alike)
                             are named only inside migrations (architecture implementation-patterns, module rules).
 
 Exemptions (the only ones; each is reported in the summary line):
-  - migrations: `skills/bmod-*/migration-<n>.toml` and `skills/*/scripts/migrate_*.py` are the files that carry
+  - migrations: `skills/bmod-*/migration-<n>.toml` and `skills/*/scripts/migrate_*.py` / `migrate_*.js` are the files that carry
     3.x data over, so the `sprint-skills` and `v6-files` checks and the 3.x-file half of `config-reads` skip
     them. The key check and the cross-module check still apply to them.
   - opaque assets: a file that is not UTF-8 text (a `.pptx` deck, an image) or a bundled engine under
@@ -119,7 +119,7 @@ KEY_ARG = re.compile(r"--key\s+([^\s\"'`]+)")
 TEXT_SUFFIXES = {".md", ".toml", ".py", ".sh", ".ps1", ".json", ".txt", ".yaml", ".yml", ".csv", ".js", ".mjs", ".cjs"}
 OPAQUE_ASSET_SUFFIXES = {".cjs", ".js", ".mjs"}
 MIGRATION_TOML = re.compile(r"^migration-\d+\.toml$")
-MIGRATION_SCRIPT = re.compile(r"^migrate_.*\.py$")
+MIGRATION_SCRIPT = re.compile(r"^migrate_.*\.(?:py|js)$")
 
 
 @dataclass
@@ -227,7 +227,7 @@ def is_opaque(path: Path) -> bool:
 
 
 def is_migration(rel: Path) -> bool:
-    # rel is relative to skills/: <folder>/migration-<n>.toml or <folder>/scripts/migrate_*.py
+    # rel is relative to skills/: <folder>/migration-<n>.toml or <folder>/scripts/migrate_*.py|js
     parts = rel.parts
     if len(parts) == 2 and parts[0].startswith(RECORD_PREFIX) and MIGRATION_TOML.match(parts[1]):
         return True

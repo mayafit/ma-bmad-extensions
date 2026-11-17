@@ -1,5 +1,6 @@
 [skill]
 bmod = "bmod-ma-atlassian"
 source = "github:mayafit/ma-bmad-extensions/skills"
-# Installed by setup to `_bmad/ma-atlassian/scripts/` too; the workflow runs it from `{skill-root}/scripts/`.
-scripts = ["scripts/bind.py"]
+# Installed by setup to `_bmad/ma-atlassian/scripts/` too; the workflow runs bind.py from `{skill-root}/scripts/`.
+# migrate_binding.js is the script `bmod-ma-atlassian/migration-1.toml` calls (run with `node`).
+scripts = ["scripts/bind.py", "scripts/migrate_binding.js"]

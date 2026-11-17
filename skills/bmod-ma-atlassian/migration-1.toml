@@ -1,0 +1,71 @@
+# The ma-atlassian module's first migration: an ma-agents 3.x Atlassian binding into this module's answers and bind.
+# `bmad migrate` runs a module's `migration-<n>.toml` files in `<n>` order, after the `method` module's own
+# migrations. One script does the deterministic part; this file tells the agent when to run it and what to check.
+
+[migration]
+module = "ma-atlassian"
+from = "3"
+to = "4"
+title = "Move the ma-agents 3.x Jira and Confluence binding into ma-atlassian"
+summary = "Reads the 3.x binding (_bmad-output/project-layout.yaml and the 3.x publish blocks in _bmad/custom/*.toml), writes the ma-atlassian answers it maps through setup.py --module-answers, deletes the 3.x blocks keeping every other byte, runs ma-atlassian-bind bind, and reports every answer it mapped, asked for or could not map. One script does the deterministic part; this file tells the agent when to run it and what to check."
+
+# Read-only signals. Either one makes this migration worth offering.
+detect = """
+- `_bmad-output/project-layout.yaml` exists at the project root (the 3.x binding record), or
+- a `_bmad/custom/*.toml` holds a 3.x marker line: `# BEGIN:ma-agents-confluence-publish` (the publish block the 3.x installer wrote) or a commented `MA-AGENTS-START`;
+and no `migration-v6-v7/ma-atlassian-migration-1.md` under `core.output_folder` says `status: done`.
+It applies only when the `ma-atlassian` module is installed (its record `bmod-ma-atlassian` and the member `ma-atlassian-bind` are in the skills folder); otherwise say so, point at installing the module, and stop.
+"""
+
+# What the migration moves toward. `<root>` is `{output_folder}` from the BMad config.
+target = """
+<project-root>/.mv6/<run>/                      # the backup folder: a short name, so a backup path fits MAX_PATH on Windows whenever its source does
+<project-root>/_bmad/
+  ma-atlassian/scripts/                         # placed by setup with the answers
+  custom/<skill>.toml                           # the 3.x blocks gone; ma-atlassian-bind's key-level pairs in their place
+  custom/ticketing-store-config.toml            # the jira-onprem store, written by bind
+<root>/migration-v6-v7/ma-atlassian-migration-1.md   # the report
+<project-root>/_bmad-output/project-layout.yaml # kept as it was; 4.x reads nothing from it
+"""
+
+precautions = """
+- Nothing changes before the plan is approved. The only run before approval is the script's `--dry-run`, which writes no file.
+- The script backs up every file it changes under `<project-root>/.mv6/<run>/` before writing it, deletes only the 3.x marker lines and the lines between them, and keeps every other byte of the file, line endings included.
+- A file whose 3.x markers are unbalanced, nested or mixed is left unchanged and reported; the user repairs it and runs the migration again.
+- Module answers are written only through `setup.py --module-answers`, and only for questions setup still lists as pending; an answer already given is kept.
+- `project-layout.yaml` is read, never changed or deleted. Nothing is deleted.
+- When the project is under git, commit after the script ran; never push.
+"""
+
+guide = """
+## Sequence
+
+1. Confirm the module is installed: the skills folder that holds `bmad` also holds `bmod-ma-atlassian` and `ma-atlassian-bind`. Call that folder `<skills>`.
+2. Preview: `node {project-root}/_bmad/ma-atlassian/scripts/migrate_binding.js --project-root {project-root} --skills-root <skills> --dry-run`. When setup has not placed the script yet, run the copy in the skill folder, `<skills>/ma-atlassian-bind/scripts/migrate_binding.js`, with the same arguments.
+   - Exit 3 prints one `ask:` line per question the 3.x binding cannot answer: `confluence_site` (3.x never recorded it), a Jira answer when the 3.x project did not use Jira, `planning_space` when no 3.x store was on Confluence, and `planning-store` when the 3.x binding names two different Confluence stores (the one chosen becomes the planning destination, the other the tickets destination). Ask the user each one and preview again with `--answer <key>=<value>` per answer and `--planning-store system|software`.
+   - Exit 0 prints, per answer, its value and how it was found (`mapped` from the 3.x binding, `asked`, `default`, or `kept` because setup already holds it), and each 3.x block it will delete. Show that to the user as the plan and wait for approval.
+3. Run: the same command, with the same `--answer` and `--planning-store` arguments, without `--dry-run`. The script writes the answers through `setup.py --module-answers`, deletes the 3.x blocks, runs `ma-atlassian-bind bind`, and writes the report `<root>/migration-v6-v7/ma-atlassian-migration-1.md`.
+4. Run every `checklist` item and record its result in the report's `## Verification` section. Fix and recheck a failure, or report it; never skip one.
+5. Report: the answers and how each was found, the blocks deleted, the bind result (explain `collision`, `slot missing` and `refused` lines as `ma-atlassian-bind` does), the report path, the backup folder (the user's to delete once satisfied), and that `_bmad-output/project-layout.yaml` is no longer read and may be deleted once the user is satisfied.
+
+## Exit codes
+
+0 done (a re-run on a migrated project prints `nothing changed (already migrated)`); 1 work left undone (a file refused for damaged 3.x markers, setup or bind failed; the report says which); 2 a prerequisite is missing (no BMad setup, no `uv`, the module not installed); 3 an answer or a choice is needed, nothing written.
+
+## What the script maps
+
+- `sprint_management` in `jira` mode: `jira_url` to `jira_site`, `jira_project_key` to `jira_project_key`.
+- A Confluence requirement store (`system_requirements_store` or `software_requirements_store` with `backend: confluence`): `space_key` to `planning_space`, `root_page` (its id, else its title) to `planning_root_page`. Two stores with the same space and root page are one destination; two different ones need the `planning-store` choice. A `file-system` store has no Confluence destination and is reported.
+- `confluence_site`, `jira_mcp_server` and `confluence_mcp_server` are not in a 3.x binding: the required one is asked for, the two MCP server names (user-scoped) take their default, empty: REST with ambient credentials.
+- The 3.x blocks published through the 3.x `confluence-plan` command; `ma-atlassian-bind` replaces them with its own key-level slots (publish to the planning destination, read Confluence before drafting, and the build and Sofia slots).
+"""
+
+# Verification. Every item is checked and its result recorded; an item that cannot be checked is reported as such.
+checklist = [
+  "`uv run --no-cache {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.ma-atlassian.jira_site --key modules.ma-atlassian.jira_project_key --key modules.ma-atlassian.confluence_site --key modules.ma-atlassian.planning_space` returns the values the report's Answers table lists.",
+  "No `_bmad/custom/*.toml` holds `# BEGIN:ma-agents-confluence-publish`, `# END:ma-agents-confluence-publish` or a commented `MA-AGENTS-START` / `MA-AGENTS-END` line, except a file the report lists as refused.",
+  "Every file the script changed has a copy in `.mv6/<run>/` listed in its `index.txt`; comparing each copy with the file shows only the 3.x block lines removed.",
+  "`uv run --no-cache <skills>/ma-atlassian-bind/scripts/bind.py status --project-root {project-root}` ends with `status: bound`, or the report explains each line that is not bound.",
+  "A second run of the script prints `nothing changed (already migrated)` and changes no file (compare `git status` before and after).",
+  "The report lists every input read, every answer with how it was found (mapped, asked, default or kept), every 3.x block deleted or refused, the bind output, and `_bmad-output/project-layout.yaml` as kept.",
+]
