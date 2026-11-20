@@ -1,6 +1,6 @@
 ---
 name: ma-atlassian-confluence-plan
-description: 'Previews the Confluence page tree an initiative would publish to the planning and tickets destinations, without writing. Use when the user says "confluence plan", "preview the confluence pages" or asks what would be published where. This version is a placeholder that reports the workflow is not available.'
+description: 'Previews the Confluence page tree an initiative would publish to the planning and tickets destinations, without writing. Use when the user says "confluence plan", "preview the confluence pages" or asks what would be published where.'
 ---
 
 Run the following command exactly once without changing the current working directory.

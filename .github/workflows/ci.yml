@@ -97,6 +97,9 @@ jobs:
       - name: ma-atlassian migration script on 3.x binding fixtures, idempotent second run, every mutant red (FR294; Story 38.5)
         run: uv run --no-cache tools/test_migrate_binding.py --tree "$BMAD_TREE" --mutants
 
+      - name: ma-atlassian Confluence engine (page tree, collision check, publish) against the Confluence DC mock, every mutant red (FR290, FR300; Story 38.4)
+        run: uv run --no-cache tools/test_confluence_engine.py --tree "$BMAD_TREE" --mutants
+
       - name: Pack the Skills CLI
         run: node tools/pack-skills-cli.mjs "$SKILLS_CLI" "$RUNNER_TEMP/skills-cli"
 

@@ -1,6 +1,14 @@
 [skill]
 bmod = "bmod-ma-atlassian"
 source = "github:mayafit/ma-bmad-extensions/skills"
-# Installed by setup to `_bmad/ma-atlassian/scripts/` too; the workflow runs bind.py from `{skill-root}/scripts/`.
+# Installed by setup to `_bmad/ma-atlassian/scripts/` too. The workflow runs bind.py from `{skill-root}/scripts/`;
+# the Confluence engine (publish engine, page tree, collision check; `node`, no npm dependency) runs from
+# `{project-root}/_bmad/ma-atlassian/scripts/`, where the bound upstream skills and the two Confluence members find it.
 # migrate_binding.js is the script `bmod-ma-atlassian/migration-1.toml` calls (run with `node`).
-scripts = ["scripts/bind.py", "scripts/migrate_binding.js"]
+scripts = [
+  "scripts/bind.py",
+  "scripts/migrate_binding.js",
+  "scripts/confluence_publish.cjs",
+  "scripts/confluence_page_tree.cjs",
+  "scripts/confluence_collision_check.cjs",
+]

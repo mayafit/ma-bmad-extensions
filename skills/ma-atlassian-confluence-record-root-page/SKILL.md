@@ -1,6 +1,6 @@
 ---
 name: ma-atlassian-confluence-record-root-page
-description: 'Records a Confluence root page the user created as the planning or tickets root page answer of the ma-atlassian module. Use when the user says "record the confluence root page" or names a new root page for a destination. This version is a placeholder that reports the workflow is not available.'
+description: 'Records a Confluence root page the user created as the planning or tickets root page answer of the ma-atlassian module. Use when the user says "record the confluence root page" or names a new root page for a destination.'
 ---
 
 Run the following command exactly once without changing the current working directory.
